@@ -359,6 +359,7 @@ class GraphBuildOrchestrator:
                       verification_output: VerificationOutput) -> Optional[RendererOutput]:
         # Fix 1: Renderer receives the final graph with canonical_path and validation_summary
         renderer_input = {
+            "subgraph": final_graph,  # Renderer expects 'subgraph' key
             "graph": final_graph,
             "canonical_path": getattr(ranker_output, "selected_canonical_path", None) if ranker_output else None,
             "alternate_paths": getattr(ranker_output, "alternate_paths", []) if ranker_output else [],

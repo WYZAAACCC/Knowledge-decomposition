@@ -210,7 +210,7 @@ class Node(BaseModel):
     type: NodeType
     title: str = Field(..., min_length=1, max_length=100)
     statement: Optional[str] = Field(None, min_length=1, max_length=2000)
-    formula_latex: Optional[str] = Field(None, min_length=1, max_length=1000)
+    formula_latex: Optional[str] = Field(None, max_length=1000)
     domain: Domain
     abstraction_level: int = Field(..., ge=0, le=10)
     pedagogical_level: int = Field(..., ge=1, le=10)

@@ -117,17 +117,21 @@ class RouterAgent:
         return self._alias_to_id
 
     def run(self, topic_text: str) -> RouterOutput:
-        # Fix 13: 1. exact match (CN mapping)
-        cn_match = self._try_cn_mapping(topic_text)
-        if cn_match:
-            cn_match.resolution_method = "exact"
-            return cn_match
-
-        # Fix 13: 2. alias match
+        # Fix 13: 1. alias match first (seed data format)
         local_match = self._try_local_match(topic_text)
         if local_match and local_match.confidence >= 0.9:
             local_match.resolution_method = "alias"
             return local_match
+
+        # Fix 13: 2. CN mapping (with verification against alias DB)
+        cn_match = self._try_cn_mapping(topic_text)
+        if cn_match:
+            # Verify the CN-mapped ID exists in alias DB
+            if cn_match.normalized_topic in self.alias_to_id:
+                cn_match.resolution_method = "exact"
+                return cn_match
+            # If not, mark as fuzzy and continue to local matching
+            cn_match = None
 
         # Fix 13: 3. fuzzy match
         fuzzy_match = self._try_fuzzy_match(topic_text)
