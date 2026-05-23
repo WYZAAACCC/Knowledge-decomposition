@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple, Optional, Any
 from sympy import sympify, simplify, Symbol, Eq, solve
 from sympy.parsing.sympy_parser import parse_expr
 
-from ..models import Node, Edge, KnowledgeGraph
+from ..models import Node, Edge, KnowledgeGraph, DimensionCheck, DimensionVector
 from ..physics.dimensions import get_dimension_system
 from ..physics.quantity_registry import get_quantity_registry
 
@@ -357,6 +357,89 @@ class DimensionValidator:
                 to_node = node_map.get(edge.to)
 
                 if from_node and to_node and from_node.type == "equation" and to_node.type == "equation":
-                    # 简单检查：两个方程的量纲应该一致或相关
-                    # 实际需要更复杂的推导关系分析
-                    pass
+                    check = self.check_term_dimensions(from_node)
+                    if check and not check.passed:
+                        errors.append(f"量纲链错误: {from_node.id} → {to_node.id}: {check.details}")
+
+    def check_term_dimensions(self, node: Node) -> Optional[DimensionCheck]:
+        """Fix 8: 项级别量纲检查
+
+        对于形如 p + 1/2ρv² + ρgh = C 的方程，
+        检查所有相加项量纲是否一致。
+        """
+        if not hasattr(node, 'formula_latex') or not node.formula_latex:
+            return None
+
+        latex = node.formula_latex
+        # 已知方程的项级量纲映射
+        known_equations = {
+            'bernoulli': {
+                'terms': ['p', 'ρv²', 'ρgh'],
+                'expected_dim': 'M L^-1 T^-2',
+            },
+            'euler_fluid': {
+                'terms': ['ρDv/Dt', '∇p', 'ρg'],
+                'expected_dim': 'M L^-2 T^-2',
+            },
+            'newton_second': {
+                'terms': ['F', 'ma'],
+                'expected_dim': 'M L T^-2',
+            },
+            'ideal_gas': {
+                'terms': ['pV', 'nRT'],
+                'expected_dim': 'M L^2 T^-2',
+            },
+        }
+
+        node_id = node.id.lower() if hasattr(node, 'id') else ''
+        for key, info in known_equations.items():
+            if key in node_id:
+                dims = []
+                for term in info['terms']:
+                    dim = self._infer_term_dimension(term)
+                    if dim:
+                        dims.append((term, f"M^{dim.M} L^{dim.L} T^{dim.T}"))
+                if len(set(d for _, d in dims)) <= 1:
+                    return DimensionCheck(
+                        expression=latex,
+                        expected=DimensionVector(M=1, L=-1, T=-2),
+                        actual=DimensionVector(M=1, L=-1, T=-2),
+                        passed=True,
+                        details=[f"所有项量纲一致: {info['expected_dim']}"],
+                    )
+                else:
+                    return DimensionCheck(
+                        expression=latex,
+                        passed=False,
+                        details=[f"项量纲不一致: {dict(dims)}"],
+                    )
+
+        return DimensionCheck(
+            expression=latex,
+            passed=True,
+            details=["无已知项级检查规则，跳过"],
+        )
+
+    @staticmethod
+    def _infer_term_dimension(term: str) -> Optional[DimensionVector]:
+        """从项描述推断量纲向量"""
+        # 简化实现：识别常见物理量
+        term_lower = term.lower()
+        if any(k in term_lower for k in ['p', 'pressure']):
+            return DimensionVector(M=1, L=-1, T=-2)
+        if 'ρ' in term_lower or 'rho' in term_lower or 'density' in term_lower:
+            return DimensionVector(M=1, L=-3)
+        if any(k in term_lower for k in ['v²', 'v^2', 'velocity^2', 'v2']):
+            return DimensionVector(L=2, T=-2)
+        if 'ρv' in term_lower or 'rho*v' in term_lower:
+            return DimensionVector(M=1, L=-1, T=-2)  # ρ*v² gives M L^-1 T^-2
+        if any(k in term_lower for k in ['g', 'gravity']):
+            return DimensionVector(L=1, T=-2)
+        if 'h' in term_lower or 'height' in term_lower:
+            return DimensionVector(L=1)
+        if 'ρgh' in term_lower:
+            # ρ * g * h = M L^-3 * L T^-2 * L = M L^-1 T^-2
+            return DimensionVector(M=1, L=-1, T=-2)
+        if any(k in term_lower for k in ['f', 'force', 'ma']):
+            return DimensionVector(M=1, L=1, T=-2)
+        return None

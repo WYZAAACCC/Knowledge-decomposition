@@ -15,13 +15,23 @@ from ..models import Node, Edge
 
 @dataclass
 class RetrievalOutput:
-    """RetrieverAgent输出"""
+    """Fix 3: RetrieverAgent输出 — 增加 status 和 candidate_topics"""
     candidate_nodes: List[Node]
     candidate_edges: List[Edge]
     candidate_paths: List[List[str]]
     retrieval_evidence: Dict[str, Any]
     seed_coverage: float
     max_nodes: int = 40
+    # Fix 3: 新增字段
+    status: str = "ok"  # RetrievalStatus
+    candidate_topics: list = None  # List[TopicCandidate]
+    errors: list = None
+
+    def __post_init__(self):
+        if self.candidate_topics is None:
+            self.candidate_topics = []
+        if self.errors is None:
+            self.errors = []
 
 
 class RetrieverAgent:
@@ -77,38 +87,45 @@ class RetrieverAgent:
 
         # 1. 查找目标节点
         original_target = target  # 保存原始路由结果
+        # Fix 3: 禁止自动创建正式节点
         target_node = self._find_node_by_id(target)
         if not target_node:
+            # 尝试相似匹配
+            from ..models import TopicCandidate
             similar_nodes = self._find_similar_nodes(target, domain)
-            if similar_nodes:
+            candidates = [
+                TopicCandidate(
+                    node_id=n.id,
+                    title=n.title,
+                    alias_match_score=0.9 if i == 0 else 0.7,
+                )
+                for i, n in enumerate(similar_nodes[:5])
+            ]
+            if candidates:
+                # 使用最佳匹配
                 target_node = similar_nodes[0]
+                retrieval_evidence = {
+                    "target_resolved_by": "fuzzy_match",
+                    "original_target": original_target,
+                    "best_match": candidates[0].node_id,
+                    "candidates": [c.model_dump() for c in candidates],
+                }
             else:
-                from ..models import Node, NodeType, TheoryContext
-                theory_ctx = TheoryContext.CLASSICAL
-                domain_str = str(domain).lower() if domain else ""
-                target_str = str(target).lower()
-                if "relativ" in domain_str or "relativ" in target_str or "general_relativ" in target_str:
-                    theory_ctx = TheoryContext.RELATIVISTIC
-                elif "quantum" in domain_str or "quantum" in target_str or "schrodinger" in target_str:
-                    theory_ctx = TheoryContext.QUANTUM_INTRO
-                elif "statistic" in domain_str or "boltzmann" in target_str or "partition" in target_str:
-                    theory_ctx = TheoryContext.STATISTICAL
-                elif "modern" in domain_str:
-                    if "relativ" in target_str:
-                        theory_ctx = TheoryContext.RELATIVISTIC
-                    elif "quantum" in target_str:
-                        theory_ctx = TheoryContext.QUANTUM_INTRO
-                target_node = Node(
-                    id=target,
-                    type=NodeType.EQUATION,
-                    title=target.split('.')[-1].replace('_', ' '),
-                    statement="待补充",
-                    formula_latex="N/A",
-                    domain=domain,
-                    abstraction_level=5,
-                    pedagogical_level=3,
-                    theory_context=theory_ctx,
-                    sources=["auto_generated"]
+                # Fix 3: 找不到topic — 返回失败，不创建节点
+                return RetrievalOutput(
+                    candidate_nodes=[],
+                    candidate_edges=[],
+                    candidate_paths=[],
+                    retrieval_evidence={
+                        "target_found": False,
+                        "target_node": original_target,
+                        "reason": "Target topic not found in seed knowledge base",
+                    },
+                    seed_coverage=0.0,
+                    max_nodes=max_nodes,
+                    status="topic_not_found",
+                    candidate_topics=candidates,
+                    errors=[f"Topic '{original_target}' not found in any seed domain"],
                 )
 
         # 2. 收集候选节点（向下展开）
@@ -157,6 +174,8 @@ class RetrieverAgent:
             candidate_paths=candidate_paths,
             retrieval_evidence=retrieval_evidence,
             seed_coverage=seed_coverage,
+            status="ok",
+            errors=[],
             max_nodes=max_nodes
         )
 

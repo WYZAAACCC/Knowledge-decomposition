@@ -194,12 +194,22 @@ class RankerAgent:
             simplicity_score = self._calculate_simplicity_score(path_id, graph)
             source_confidence = self._calculate_source_confidence(path_id, graph)
 
-            # 综合分数（使用文档中的权重）
+            # Fix 9: 新评分权重
+            completeness_score = self._calculate_completeness_score(path_id, graph)
+            assumption_score = self._calculate_assumptions_coverage(
+                [e for e in graph.edges if e.path_id == path_id]
+            )
+            topology_score = self._calculate_topology_score(path_id, graph)
+            teaching_score = self._calculate_teaching_score(path_id, graph)
+
             total_score = (
-                0.35 * pedagogy_score +
-                0.25 * validation_score +
-                0.20 * simplicity_score +
-                0.20 * source_confidence
+                0.30 * completeness_score +
+                0.20 * source_confidence +
+                0.15 * assumption_score +
+                0.15 * validation_score +
+                0.10 * topology_score +
+                0.05 * simplicity_score +
+                0.05 * teaching_score
             )
 
             # 生成理由
@@ -408,6 +418,48 @@ class RankerAgent:
         branch_score = max(0, 1.0 - branch_penalty / 5)  # 分支超过5会降低分数
 
         return (length_score + branch_score) / 2
+
+    def _calculate_completeness_score(self, path_id: str, graph: KnowledgeGraph) -> float:
+        """Fix 9: 计算完整性分数 — 是否覆盖目标的必要前提"""
+        path_edges = [e for e in graph.edges if e.path_id == path_id]
+        if not path_edges:
+            return 0.0
+        # 检查derivation edge是否覆盖了足够多的prerequisite
+        deriv_edges = [e for e in path_edges if e.type.value in {'derives', 'derives_from'}]
+        if not deriv_edges:
+            return 0.3
+        has_assumptions = any(getattr(e, 'assumption_ids', []) or e.assumptions for e in deriv_edges)
+        has_proof = any(getattr(e, 'proof_step_ids', []) or e.derivation_steps for e in deriv_edges)
+        return 0.4 + (0.3 if has_assumptions else 0.0) + (0.3 if has_proof else 0.0)
+
+    def _calculate_topology_score(self, path_id: str, graph: KnowledgeGraph) -> float:
+        """Fix 9: 计算拓扑分数 — 是否符合 prerequisite -> conclusion"""
+        path_edges = [e for e in graph.edges if e.path_id == path_id]
+        if not path_edges:
+            return 0.0
+        # 检查是否有from→to的abstraction_level递增
+        node_map = {n.id: n for n in graph.nodes}
+        correct_direction = 0
+        for e in path_edges:
+            fn = node_map.get(e.from_)
+            tn = node_map.get(e.to)
+            if fn and tn:
+                if getattr(fn, 'abstraction_level', 0) <= getattr(tn, 'abstraction_level', 0):
+                    correct_direction += 1
+        return correct_direction / len(path_edges) if path_edges else 0.0
+
+    def _calculate_teaching_score(self, path_id: str, graph: KnowledgeGraph) -> float:
+        """Fix 9: 计算教学展示分数"""
+        path_edges = [e for e in graph.edges if e.path_id == path_id]
+        if not path_edges:
+            return 0.0
+        path_nodes = self._get_path_nodes(path_id, graph)
+        # 路径层次分布越好（0→n 均匀覆盖），教学性越高
+        levels = [getattr(n, 'abstraction_level', 0) for n in path_nodes]
+        if not levels:
+            return 0.0
+        unique_levels = len(set(levels))
+        return min(1.0, unique_levels / 5)
 
     def _calculate_source_confidence(self, path_id: str, graph: KnowledgeGraph) -> float:
         """计算来源可信度"""
