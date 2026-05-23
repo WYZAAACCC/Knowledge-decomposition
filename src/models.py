@@ -30,8 +30,12 @@ class NodeType(str, Enum):
 
 
 class EdgeType(str, Enum):
-    """边类型枚举"""
-    DERIVES_FROM = "derives_from"
+    """边类型枚举
+
+    Fix 0: 统一边方向 — from = prerequisite/premise/lower-level, to = conclusion/higher-level
+    """
+    DERIVES = "derives"              # 推荐：从前提推导到结论
+    DERIVES_FROM = "derives_from"    # 兼容旧格式
     REQUIRES = "requires"
     USES_MATH = "uses_math"
     ASSUMES = "assumes"
@@ -41,6 +45,28 @@ class EdgeType(str, Enum):
     APPLIES_TO = "applies_to"
     MOTIVATED_BY = "motivated_by"
     RELATED_TO = "related_to"
+
+# Fix 7: 只对推导类边检查 DAG
+DERIVATION_EDGE_TYPES = {EdgeType.DERIVES, EdgeType.DERIVES_FROM, EdgeType.REQUIRES, EdgeType.USES_MATH}
+
+
+class TrustLevel(str, Enum):
+    """Fix 2: 知识来源可信度等级"""
+    VERIFIED = "verified"          # 已通过所有验证
+    SEED = "seed"                  # 来自 seed 知识库
+    MANUAL = "manual"              # 人工审核
+    TEXTBOOK = "textbook"          # 教材确认
+    LLM_PROPOSAL = "llm_proposal"  # LLM 提议，需人工审核
+    AUTO_GENERATED = "auto_generated"  # 自动生成，未验证
+    UNKNOWN = "unknown"
+
+
+class RetrievalStatus(str, Enum):
+    """Fix 3: 检索状态"""
+    OK = "ok"
+    TOPIC_NOT_FOUND = "topic_not_found"
+    NO_CONNECTED_SUBGRAPH = "no_connected_subgraph"
+    EMPTY_SEED = "empty_seed"
 
 
 class Domain(str, Enum):
@@ -93,6 +119,65 @@ class DimensionInfo(BaseModel):
     unit: str
 
 
+class SourceRef(BaseModel):
+    """Fix 2: 知识来源引用"""
+    source_type: str = Field(default="unknown", pattern=r"^(seed|textbook|manual|llm|script|unknown)$")
+    source_id: Optional[str] = None
+    title: Optional[str] = None
+    url: Optional[str] = None
+    page: Optional[str] = None
+    confidence: float = Field(ge=0, le=1, default=1.0)
+
+
+class DimensionVector(BaseModel):
+    """Fix 8: 量纲向量 (M, L, T, I, Θ, N, J)"""
+    M: int = 0
+    L: int = 0
+    T: int = 0
+    I: int = 0
+    Theta: int = 0
+    N: int = 0
+    J: int = 0
+
+
+class DimensionCheck(BaseModel):
+    """Fix 8: 量纲检查结果"""
+    expression: str
+    expected: Optional[DimensionVector] = None
+    actual: Optional[DimensionVector] = None
+    passed: bool
+    details: list[str] = Field(default_factory=list)
+
+
+class ProofStep(BaseModel):
+    """改进 1: 可验证推导步骤"""
+    id: str = Field(..., pattern=r"^proofstep\.[a-z0-9_]+(\.[a-z0-9_]+)*$")
+    title: str = Field(..., min_length=1)
+    input_node_ids: list[str] = Field(default_factory=list)
+    output_node_id: str
+    input_expressions: list[str] = Field(default_factory=list)
+    output_expression: Optional[str] = None
+    operation: str = Field(
+        default="algebraic_transform",
+        pattern=r"^(definition_expansion|substitution|algebraic_transform|differentiation|integration|projection|approximation|limit|conservation_law|empirical_law|boundary_condition)$"
+    )
+    assumption_ids: list[str] = Field(default_factory=list)
+    dimension_check: Optional[DimensionCheck] = None
+    explanation_zh: str = Field(min_length=1)
+    explanation_en: Optional[str] = None
+    source: list[SourceRef] = Field(default_factory=list)
+    trust_level: TrustLevel = TrustLevel.SEED
+    verified: bool = False
+
+
+class TopicCandidate(BaseModel):
+    """Fix 3: 候选主题"""
+    node_id: str
+    title: str
+    alias_match_score: float = Field(ge=0, le=1)
+    graph_distance_hint: Optional[int] = None
+
+
 class VerifiedInfo(BaseModel):
     """验证状态"""
     schema_: bool = Field(alias="schema", default=False)
@@ -103,7 +188,11 @@ class VerifiedInfo(BaseModel):
 # ===== 节点模型 =====
 
 class Node(BaseModel):
-    """知识图谱节点"""
+    """知识图谱节点
+
+    Fix 2: 增加 trust_level, provenance, verified 字段
+    Fix 0: from = prerequisite, to = conclusion
+    """
     id: str = Field(..., pattern=r"^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$")
     type: NodeType
     title: str = Field(..., min_length=1, max_length=100)
@@ -117,8 +206,12 @@ class Node(BaseModel):
     validity: Optional[ValidityInfo] = None
     aliases: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
-    sources: List[str] = Field(..., min_length=1)
+    sources: List[str] = Field(default_factory=list)
     dimension: Optional[DimensionInfo] = None
+    # Fix 2: 信任与溯源
+    trust_level: TrustLevel = TrustLevel.SEED
+    provenance: list[SourceRef] = Field(default_factory=list)
+    verified: bool = False
 
     model_config = ConfigDict(extra="forbid")
 
@@ -137,33 +230,44 @@ class Node(BaseModel):
 # ===== 边模型 =====
 
 class Edge(BaseModel):
-    """知识图谱边"""
+    """知识图谱边
+
+    Fix 0: from = prerequisite, to = conclusion
+    Fix 6: assumption_ids 替代自由文本 assumptions
+    """
     id: str = Field(
         ...,
-        pattern=r"^edge\.[a-z0-9_]+\.(derives_from|requires|uses_math|assumes|equivalent_to|special_case_of|approximation_of|applies_to|motivated_by|related_to)\.[a-z0-9_]+$"
+        pattern=r"^edge\.[a-z0-9_]+\.(derives|derives_from|requires|uses_math|assumes|equivalent_to|special_case_of|approximation_of|applies_to|motivated_by|related_to)\.[a-z0-9_]+$"
     )
     type: EdgeType
     from_: str = Field(alias="from", pattern=r"^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$")
     to: str = Field(..., pattern=r"^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$")
-    path_id: str = Field(..., pattern=r"^path\.[a-z0-9_]+(\.[a-z0-9_]+)*$")
+    path_id: Optional[str] = Field(None, pattern=r"^path\.[a-z0-9_]+(\.[a-z0-9_]+)*$")
     assumptions: List[str] = Field(default_factory=list)
+    # Fix 6: 注册表假设 ID
+    assumption_ids: List[str] = Field(default_factory=list)
     derivation_steps: List[str] = Field(default_factory=list)
+    # 改进 1: 证明步骤 ID
+    proof_step_ids: List[str] = Field(default_factory=list)
     math_used: List[str] = Field(default_factory=list)
     approximation_tags: List[str] = Field(default_factory=list)
     verified: Optional[VerifiedInfo] = None
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
     failure_conditions: List[str] = Field(default_factory=list)
+    # Fix 2: 信任与溯源
+    trust_level: TrustLevel = TrustLevel.SEED
+    provenance: list[SourceRef] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     @field_validator("assumptions", "derivation_steps")
     @classmethod
     def validate_derivation_fields(cls, v: List[str], info):
-        """derives_from边必须包含assumptions和derivation_steps"""
+        """derives/derives_from边应包含assumptions或derivation_steps"""
         edge_type = info.data.get("type")
-        if edge_type == EdgeType.DERIVES_FROM:
-            if not v:
-                raise ValueError("derives_from edges must have non-empty assumptions and derivation_steps")
+        if edge_type in (EdgeType.DERIVES, EdgeType.DERIVES_FROM):
+            if not v and not info.data.get("assumption_ids") and not info.data.get("proof_step_ids"):
+                raise ValueError(f"{edge_type.value} edges must have assumptions, assumption_ids, or proof_step_ids")
         return v
 
 
@@ -192,9 +296,17 @@ class ValidationSummary(BaseModel):
 
 
 class BuildMetadata(BaseModel):
-    """构建元数据"""
+    """Fix 12: 构建元数据"""
+    schema_version: str = "0.1.0"
     build_timestamp: Optional[str] = None  # ISO格式
     build_duration_seconds: Optional[float] = Field(None, ge=0)
+    pipeline_version: str = "0.1.0"
+    seed_hash: Optional[str] = None
+    llm_calls: int = 0
+    offline: bool = False
+    strict: bool = True
+    error_count: int = 0
+    warning_count: int = 0
     agent_versions: Optional[Dict[str, str]] = None
     seed_sources: Optional[List[str]] = None
 
@@ -209,6 +321,8 @@ class KnowledgeGraph(BaseModel):
     edges: List[Edge] = Field(default_factory=list)
     canonical_path: str = Field(..., pattern=r"^path\.[a-z0-9_]+(\.[a-z0-9_]+)*$")
     alternate_paths: List[str] = Field(default_factory=list)
+    # 改进 1: 证明步骤
+    proof_steps: list[ProofStep] = Field(default_factory=list)
     stats: GraphStats
     validation_summary: ValidationSummary
     build_metadata: Optional[BuildMetadata] = None

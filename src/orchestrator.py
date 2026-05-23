@@ -21,7 +21,7 @@ from .agents.verifier_agent import VerifierAgent, VerificationOutput
 from .agents.ranker_agent import RankerAgent, RankerOutput
 from .agents.renderer_agent import RendererAgent, RendererOutput
 from .loader import DataLoader
-from .models import KnowledgeGraph, ValidationSummary
+from .models import KnowledgeGraph, ValidationSummary, BuildMetadata, TrustLevel
 from .utils.logging import get_default_logger
 
 
@@ -78,6 +78,15 @@ _MSG_SIMPLIFY = [
 ]
 
 
+class _LLMCallCounter:
+    """Fix 12: LLM调用计数器"""
+    def __init__(self):
+        self.count = 0
+
+    def increment(self):
+        self.count += 1
+
+
 class ProgressTracker:
 
     def __init__(self, progress_callback: Optional[Callable[[ProgressUpdate], None]] = None):
@@ -117,15 +126,25 @@ class ProgressTracker:
 class GraphBuildOrchestrator:
 
     def __init__(self, artifacts_dir: str = "artifacts/latest",
-                 progress_callback: Optional[Callable[[ProgressUpdate], None]] = None):
+                 progress_callback: Optional[Callable[[ProgressUpdate], None]] = None,
+                 offline: bool = False,
+                 strict: bool = False,
+                 no_llm: bool = False,
+                 allow_proposals: bool = False):
         self.logger = get_default_logger()
         self.artifacts_dir = Path(artifacts_dir)
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
 
+        # Fix 14: 新增模式
+        self.offline = offline
+        self.strict = strict
+        self.no_llm = no_llm
+        self.allow_proposals = allow_proposals
+
         self.progress_tracker = ProgressTracker(progress_callback)
 
         self.loader = DataLoader()
-        self.router = RouterAgent(self.loader)
+        self.router = RouterAgent(self.loader, offline=self.offline)
         self.planner = PlannerAgent(self.loader)
         self.retriever = RetrieverAgent(self.loader)
         self.decomposer = DecomposerAgent(self.loader)
@@ -136,6 +155,7 @@ class GraphBuildOrchestrator:
         self.timing = {}
         self.errors = []
         self.warnings = []
+        self.llm_call_counter = _LLMCallCounter()
         self._down = None
         self._up = None
         self._max_nodes = None
@@ -216,13 +236,7 @@ class GraphBuildOrchestrator:
                 lambda out: {"canonical_path": out.selected_canonical_path if out else None}
             )
 
-            renderer_output = self._run_stage(
-                BuildStage.RENDERER, "运行RendererAgent生成输出工件",
-                lambda: self._run_renderer(ranker_output, verification_output, decomposer_output),
-                lambda out: "RendererAgent完成",
-                lambda out: {}
-            )
-
+            # Fix 1: Build final_graph BEFORE running renderer
             self.progress_tracker.update(BuildStage.FINALIZE, "started", "构建最终图谱")
             final_graph = self._build_final_graph(
                 decomposer_output.subgraph, ranker_output, verification_output
@@ -231,6 +245,13 @@ class GraphBuildOrchestrator:
                 BuildStage.FINALIZE, "completed",
                 f"最终图谱构建完成: {len(final_graph.nodes)}个节点, {len(final_graph.edges)}条边",
                 {"node_count": len(final_graph.nodes), "edge_count": len(final_graph.edges)}
+            )
+
+            renderer_output = self._run_stage(
+                BuildStage.RENDERER, "运行RendererAgent生成输出工件",
+                lambda: self._run_renderer(final_graph, ranker_output, verification_output),
+                lambda out: "RendererAgent完成",
+                lambda out: {}
             )
 
             artifacts = self._collect_artifacts(
@@ -302,12 +323,16 @@ class GraphBuildOrchestrator:
             d['max_nodes'] = self._max_nodes
         return d
 
-    def _run_renderer(self, ranker_output: RankerOutput,
-                      verification_output: VerificationOutput,
-                      decomposer_output: DecomposerOutput) -> Optional[RendererOutput]:
-        renderer_input = self._to_dict(ranker_output)
-        if decomposer_output and hasattr(decomposer_output, 'subgraph'):
-            renderer_input['subgraph'] = decomposer_output.subgraph
+    def _run_renderer(self, final_graph: KnowledgeGraph,
+                      ranker_output: RankerOutput,
+                      verification_output: VerificationOutput) -> Optional[RendererOutput]:
+        # Fix 1: Renderer receives the final graph with canonical_path and validation_summary
+        renderer_input = {
+            "graph": final_graph,
+            "canonical_path": getattr(ranker_output, "selected_canonical_path", None) if ranker_output else None,
+            "alternate_paths": getattr(ranker_output, "alternate_paths", []) if ranker_output else [],
+            "validation": self._to_dict(verification_output) if verification_output else None,
+        }
         return self.renderer.run(
             renderer_input,
             self._to_dict(verification_output) if verification_output else None
@@ -369,12 +394,13 @@ class GraphBuildOrchestrator:
             except Exception:
                 pass
 
-        subgraph.build_metadata = {
-            "build_timestamp": time.time(),
-            "timing": self.timing,
-            "error_count": len(self.errors),
-            "warning_count": len(self.warnings)
-        }
+        # Fix 12: Use proper BuildMetadata Pydantic model
+        import datetime
+        subgraph.build_metadata = BuildMetadata(
+            build_timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            build_duration_seconds=self.timing.get("total", 0),
+            seed_sources=list(self.loader.load_all_seeds().keys()),
+        )
         return subgraph
 
     def _determine_status(self, graph: KnowledgeGraph,
@@ -400,10 +426,8 @@ class GraphBuildOrchestrator:
                            renderer_output: Optional[RendererOutput]) -> Dict[str, Any]:
         artifacts = {}
 
-        if graph.topic == "test.topic":
-            self.logger.error("图谱数据为测试数据，可能构建失败")
-            if decomposer_output and hasattr(decomposer_output, 'subgraph'):
-                graph = decomposer_output.subgraph
+        # Fix 11: NEVER replace final_graph with decomposer subgraph
+        # The graph passed here is the authoritative final graph
 
         if renderer_output and hasattr(renderer_output, 'artifacts'):
             artifacts.update(renderer_output.artifacts)
@@ -468,55 +492,144 @@ class GraphBuildOrchestrator:
     def _generate_report(self, graph: KnowledgeGraph,
                          verification_output: VerificationOutput,
                          ranker_output: RankerOutput) -> str:
+        """改进 10: 升级为结构化知识分解报告"""
         lines = [
-            f"# 知识图谱构建报告: {graph.topic}", "",
-            "## 摘要",
-            f"- **主题**: {graph.topic}",
+            f"# {graph.topic} 知识分解报告", "",
+            "## 1. 目标知识点",
+            f"- **主题ID**: `{graph.topic}`",
+            f"- **类型**: {self._get_topic_node_type(graph)}",
+            f"- **公式**: {self._get_topic_formula(graph)}",
             f"- **构建状态**: {'成功' if graph else '失败'}",
-            f"- **节点数**: {len(graph.nodes)}",
-            f"- **边数**: {len(graph.edges)}",
-            f"- **验证分数**: {verification_output.overall_score if verification_output else 'N/A':.2f}",
-            f"- **规范路径**: {graph.canonical_path if graph.canonical_path else '无'}",
             ""
         ]
 
+        # 分层依赖图
+        if graph.nodes:
+            levels = {}
+            for node in graph.nodes:
+                lvl = node.abstraction_level
+                levels.setdefault(lvl, []).append(node)
+
+            lines.extend(["## 2. 分层依赖图", ""])
+            for lvl in sorted(levels.keys()):
+                type_map = {
+                    "concept": "基础概念", "definition": "定义",
+                    "quantity": "物理量", "math_tool": "数学工具",
+                    "law": "基本定律", "equation": "方程",
+                    "assumption": "假设", "application": "应用",
+                }
+                label = type_map.get("concept", "")
+                nodes_str = ", ".join(
+                    f"`{n.id}`({n.title})" for n in levels[lvl][:8]
+                )
+                lines.append(f"- **Level {lvl}**: {nodes_str}")
+            lines.append("")
+
+        # 推导路径
+        if graph.canonical_path:
+            lines.extend([
+                "## 3. 规范推导路径",
+                f"**路径ID**: `{graph.canonical_path}`", "",
+            ])
+            path_edges = [e for e in graph.edges if e.path_id == graph.canonical_path]
+            for i, edge in enumerate(path_edges, 1):
+                from_node = self._find_node(graph, edge.from_)
+                to_node = self._find_node(graph, edge.to)
+                lines.append(
+                    f"{i}. `{edge.from_}` ({from_node.title if from_node else '?'}) "
+                    f"→ `{edge.to}` ({to_node.title if to_node else '?'})"
+                    f"  [{edge.type.value}]"
+                )
+            if graph.proof_steps:
+                lines.append("")
+                lines.append("### 证明步骤")
+                for ps in graph.proof_steps:
+                    lines.append(f"- **{ps.id}**: {ps.explanation_zh}")
+            lines.append("")
+
+        # 假设
+        lines.extend(["## 4. 显式假设", ""])
+        all_assumptions = set()
+        for edge in graph.edges:
+            for aid in getattr(edge, 'assumption_ids', []) or []:
+                all_assumptions.add(aid)
+            for a in getattr(edge, 'assumptions', []) or []:
+                all_assumptions.add(a)
+        if all_assumptions:
+            lines.append("| ID | 简述 |")
+            lines.append("|----|------|")
+            for aid in sorted(all_assumptions):
+                lines.append(f"| `{aid}` | - |")
+        else:
+            lines.append("*无注册假设*")
+        lines.append("")
+
+        # 量纲验证
+        if verification_output and verification_output.validation_results:
+            dim_result = verification_output.validation_results.get("dimensions", {})
+            lines.extend([
+                "## 5. 量纲验证",
+                f"- **通过**: {'是' if dim_result.get('passed', False) else '否'}",
+                f"- **分数**: {dim_result.get('score', 0):.2f}",
+                ""
+            ])
+
+        # 验证结果
         if verification_output:
             lines.extend([
-                "## 验证结果",
-                f"- **总体通过**: {'是' if verification_output.passed else '否'}",
-                f"- **总体分数**: {verification_output.overall_score:.2f}", ""
+                "## 6. 验证结果",
+                f"- **总体分数**: {verification_output.overall_score:.2f}",
+                f"- **Schema**: {'PASS' if verification_output.validation_results.get('schema', {}).get('passed') else 'FAIL'}",
+                f"- **图结构**: {'PASS' if verification_output.validation_results.get('graph_structure', {}).get('passed') else 'FAIL'}",
+                f"- **假设**: {'PASS' if verification_output.validation_results.get('assumptions', {}).get('passed') else 'FAIL'}",
+                f"- **占位检查**: {'PASS' if verification_output.validation_results.get('placeholder', {}).get('passed') else 'FAIL'}",
+                ""
             ])
             if verification_output.critical_errors:
                 lines.append("### 关键错误")
-                lines.extend(f"- {e}" for e in verification_output.critical_errors)
-                lines.append("")
-            if verification_output.warnings:
-                lines.append("### 警告")
-                lines.extend(f"- {w}" for w in verification_output.warnings[:5])
-                if len(verification_output.warnings) > 5:
-                    lines.append(f"- ... 还有 {len(verification_output.warnings) - 5} 个警告")
+                lines.extend(f"- {e}" for e in verification_output.critical_errors[:10])
                 lines.append("")
 
-        if ranker_output and ranker_output.ranking_scores:
-            lines.append("## 路径排名")
-            for path_id, score in ranker_output.ranking_scores.items():
-                mark = "✓" if path_id == graph.canonical_path else ""
-                lines.append(f"- {mark} **{path_id}**: {score:.2f}")
-            lines.append("")
+        # 来源
+        lines.extend([
+            "## 7. 来源与可信度", "",
+            "| 源类型 | 节点数 |",
+            "|--------|--------|",
+        ])
+        trust_counts = {}
+        for node in graph.nodes:
+            tl = getattr(node, 'trust_level', TrustLevel.SEED)
+            trust_counts[tl.value if hasattr(tl, 'value') else str(tl)] = \
+                trust_counts.get(tl.value if hasattr(tl, 'value') else str(tl), 0) + 1
+        for tl, count in sorted(trust_counts.items()):
+            lines.append(f"| {tl} | {count} |")
+        lines.append("")
 
-        if graph.nodes:
-            nodes_by_type = {}
-            for node in graph.nodes:
-                nodes_by_type[node.type] = nodes_by_type.get(node.type, 0) + 1
-            if nodes_by_type:
-                lines.append("## 节点类型统计")
-                for node_type, count in nodes_by_type.items():
-                    lines.append(f"- **{node_type}**: {count}")
-                lines.append("")
-
+        # 建议
         if verification_output and verification_output.suggested_actions:
-            lines.append("## 建议操作")
+            lines.append("## 8. 建议操作")
             lines.extend(f"- {a}" for a in verification_output.suggested_actions)
             lines.append("")
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _get_topic_node_type(graph) -> str:
+        for node in graph.nodes:
+            if node.id == graph.topic:
+                return node.type.value
+        return "unknown"
+
+    @staticmethod
+    def _get_topic_formula(graph) -> str:
+        for node in graph.nodes:
+            if node.id == graph.topic and node.formula_latex:
+                return f"${node.formula_latex}$"
+        return "N/A"
+
+    @staticmethod
+    def _find_node(graph, node_id):
+        for node in graph.nodes:
+            if node.id == node_id:
+                return node
+        return None

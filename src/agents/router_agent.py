@@ -2,27 +2,31 @@
 RouterAgent
 
 将用户输入topic标准化为内部topic id。
+Fix 13: Lazy LLM — 先本地解析，最后才使用LLM。
 """
 
 import re
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
+from typing import Dict, Any, Optional, List as ListType
+from dataclasses import dataclass, field
 
-from ..deepseek_client import get_deepseek_client, TaskComplexity
 from ..loader import DataLoader
 from ..physics.topic_mapping import (
     CN_TO_EN, infer_node_type, infer_domain, infer_domain_hint
 )
+from ..models import TopicCandidate
 
 
 @dataclass
 class RouterOutput:
+    """Fix 13: 增强RouterOutput"""
     normalized_topic: str
     domain: str
     node_type: str
     confidence: float
     original_input: str
-    suggestions: Optional[list] = None
+    resolution_method: str = "exact"  # Fix 13: exact, alias, fuzzy, llm, failed
+    suggestions: Optional[ListType[str]] = None
+    candidates: ListType[TopicCandidate] = field(default_factory=list)
 
 
 _VALID_DOMAINS = {"mechanics", "thermodynamics", "electromagnetism", "optics",
@@ -80,11 +84,26 @@ ID生成规则：
 
 
 class RouterAgent:
+    """Fix 13: Lazy LLM — 初始化不创建DeepSeek client"""
 
-    def __init__(self, loader: Optional[DataLoader] = None):
+    def __init__(self, loader: Optional[DataLoader] = None, offline: bool = False):
         self.loader = loader or DataLoader()
-        self.client = get_deepseek_client()
+        self.offline = offline
+        self._client = None  # Fix 13: 延迟初始化
         self._alias_to_id = None
+
+    @property
+    def client(self):
+        """Fix 13: 延迟加载 DeepSeek client"""
+        if self.offline:
+            return None
+        if self._client is None:
+            try:
+                from ..deepseek_client import get_deepseek_client
+                self._client = get_deepseek_client()
+            except Exception:
+                self._client = None
+        return self._client
 
     @property
     def alias_to_id(self) -> Dict[str, str]:
@@ -98,14 +117,29 @@ class RouterAgent:
         return self._alias_to_id
 
     def run(self, topic_text: str) -> RouterOutput:
+        # Fix 13: 1. exact match (CN mapping)
         cn_match = self._try_cn_mapping(topic_text)
         if cn_match:
+            cn_match.resolution_method = "exact"
             return cn_match
 
+        # Fix 13: 2. alias match
         local_match = self._try_local_match(topic_text)
         if local_match and local_match.confidence >= 0.9:
+            local_match.resolution_method = "alias"
             return local_match
 
+        # Fix 13: 3. fuzzy match
+        fuzzy_match = self._try_fuzzy_match(topic_text)
+        if fuzzy_match and fuzzy_match.confidence >= 0.7:
+            fuzzy_match.resolution_method = "fuzzy"
+            return fuzzy_match
+
+        # Fix 13: 4. offline mode - don't call LLM
+        if self.offline:
+            return self._build_fallback_for_failed_resolution(topic_text)
+
+        # Fix 13: 5. LLM as last resort
         return self._call_llm_for_routing(topic_text)
 
     def _try_cn_mapping(self, topic_text: str) -> Optional[RouterOutput]:
@@ -157,8 +191,64 @@ class RouterAgent:
 
         return None
 
+    def _try_fuzzy_match(self, topic_text: str) -> Optional[RouterOutput]:
+        """Fix 13: 模糊匹配"""
+        text_lower = topic_text.lower().strip()
+        best_score = 0.0
+        best_id = None
+
+        for alias, topic_id in self.alias_to_id.items():
+            # Simple substring matching with scoring
+            if text_lower in alias:
+                score = len(text_lower) / len(alias)
+            elif alias in text_lower:
+                score = len(alias) / len(text_lower)
+            else:
+                # Check character overlap
+                common = set(text_lower) & set(alias)
+                score = len(common) / max(len(set(text_lower)), len(set(alias)))
+            if score > best_score:
+                best_score = score
+                best_id = topic_id
+
+        if best_score >= 0.5 and best_id:
+            domain, node_type = self._parse_topic_id(best_id)
+            return RouterOutput(
+                normalized_topic=best_id, domain=domain, node_type=node_type,
+                confidence=best_score, original_input=topic_text,
+                resolution_method="fuzzy",
+            )
+        return None
+
+    def _build_fallback_for_failed_resolution(self, topic_text: str) -> RouterOutput:
+        """Fix 13: 解析失败时的输出（offline/strict模式）"""
+        en_name = CN_TO_EN.get(topic_text, "")
+        if not en_name:
+            for cn, en in CN_TO_EN.items():
+                if cn in topic_text or topic_text in cn:
+                    en_name = en
+                    break
+        if not en_name:
+            return RouterOutput(
+                normalized_topic="", domain="mechanics", node_type="concept",
+                confidence=0.0, original_input=topic_text,
+                resolution_method="failed",
+            )
+
+        node_type = infer_node_type(topic_text)
+        domain = infer_domain(topic_text)
+        return RouterOutput(
+            normalized_topic=f"{node_type}.{en_name}",
+            domain=domain, node_type=node_type,
+            confidence=0.3, original_input=topic_text,
+            resolution_method="fuzzy",
+        )
+
     def _call_llm_for_routing(self, topic_text: str) -> RouterOutput:
+        if not self.client:
+            return self._build_fallback_for_failed_resolution(topic_text)
         try:
+            from ..deepseek_client import TaskComplexity
             response = self.client.chat_json(
                 messages=[
                     {"role": "system", "content": _LLM_SYSTEM_PROMPT},
@@ -183,12 +273,15 @@ class RouterAgent:
 
             return RouterOutput(
                 normalized_topic=normalized_topic, domain=domain, node_type=node_type,
-                confidence=confidence, original_input=topic_text
+                confidence=confidence, original_input=topic_text,
+                resolution_method="llm",
             )
 
         except Exception as e:
             print(f"[ERROR] RouterAgent LLM调用失败: {e}")
-            return self._build_fallback_output(topic_text)
+            result = self._build_fallback_output(topic_text)
+            result.resolution_method = "failed"
+            return result
 
     @staticmethod
     def _fallback_topic_id(topic_text: str, node_type: str) -> str:

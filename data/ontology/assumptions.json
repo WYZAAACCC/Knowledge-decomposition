@@ -1,0 +1,223 @@
+[
+  {
+    "id": "assumption.steady_flow",
+    "title_zh": "稳态流动",
+    "title_en": "Steady flow",
+    "statement": "流场中各物理量不随时间变化 (∂/∂t = 0)",
+    "domain": "mechanics",
+    "subdomain": "fluid_mechanics",
+    "invalid_when": ["unsteady_flow", "turbulence_transition"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.incompressible_flow",
+    "title_zh": "不可压缩流体",
+    "title_en": "Incompressible flow",
+    "statement": "密度沿流动近似恒定 (ρ = constant)",
+    "domain": "mechanics",
+    "subdomain": "fluid_mechanics",
+    "invalid_when": ["compressible_flow", "shock_wave", "high_mach_number"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.inviscid_flow",
+    "title_zh": "无粘性流体",
+    "title_en": "Inviscid flow",
+    "statement": "流体粘性忽略不计 (μ ≈ 0)",
+    "domain": "mechanics",
+    "subdomain": "fluid_mechanics",
+    "invalid_when": ["viscous_dominated", "boundary_layer", "low_reynolds"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.along_streamline",
+    "title_zh": "沿流线",
+    "title_en": "Along streamline",
+    "statement": "推导沿同一流线进行",
+    "domain": "mechanics",
+    "subdomain": "fluid_mechanics",
+    "invalid_when": ["cross_streamline", "recirculation_zone"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.ideal_fluid",
+    "title_zh": "理想流体",
+    "title_en": "Ideal fluid",
+    "statement": "流体无粘性且不可压缩",
+    "domain": "mechanics",
+    "subdomain": "fluid_mechanics",
+    "invalid_when": ["viscous_flow", "compressible_flow"],
+    "applies_to_edge_types": ["derives"],
+    "equivalent_to": ["assumption.inviscid_flow", "assumption.incompressible_flow"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.point_mass",
+    "title_zh": "质点模型",
+    "title_en": "Point mass",
+    "statement": "物体可视为质点，忽略大小和形状",
+    "domain": "mechanics",
+    "subdomain": "classical_mechanics",
+    "invalid_when": ["rigid_body_rotation", "large_deformation"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.rigid_body",
+    "title_zh": "刚体",
+    "title_en": "Rigid body",
+    "statement": "物体不发生形变",
+    "domain": "mechanics",
+    "subdomain": "classical_mechanics",
+    "invalid_when": ["elastic_deformation", "plastic_deformation"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.no_friction",
+    "title_zh": "无摩擦",
+    "title_en": "No friction",
+    "statement": "忽略摩擦力",
+    "domain": "mechanics",
+    "subdomain": "classical_mechanics",
+    "invalid_when": ["high_friction", "contact_mechanics"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.small_oscillation",
+    "title_zh": "小振幅振动",
+    "title_en": "Small oscillation",
+    "statement": "振动幅度远小于系统特征尺寸 (sin θ ≈ θ)",
+    "domain": "mechanics",
+    "subdomain": "classical_mechanics",
+    "invalid_when": ["large_amplitude", "chaotic_motion"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.ideal_gas",
+    "title_zh": "理想气体",
+    "title_en": "Ideal gas",
+    "statement": "气体分子无体积、无相互作用",
+    "domain": "thermodynamics",
+    "subdomain": "kinetic_theory",
+    "invalid_when": ["high_pressure", "low_temperature", "real_gas"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.equilibrium",
+    "title_zh": "热力学平衡",
+    "title_en": "Thermodynamic equilibrium",
+    "statement": "系统处于热力学平衡态",
+    "domain": "thermodynamics",
+    "subdomain": "classical_thermodynamics",
+    "invalid_when": ["non_equilibrium", "irreversible_process"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.quasistatic",
+    "title_zh": "准静态过程",
+    "title_en": "Quasistatic process",
+    "statement": "过程无限缓慢，系统始终接近平衡态",
+    "domain": "thermodynamics",
+    "subdomain": "classical_thermodynamics",
+    "invalid_when": ["rapid_process", "irreversible_process"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.ohmic_conductor",
+    "title_zh": "欧姆导体",
+    "title_en": "Ohmic conductor",
+    "statement": "导体满足欧姆定律 J = σE",
+    "domain": "electromagnetism",
+    "subdomain": "circuit_theory",
+    "invalid_when": ["semiconductor", "superconductor", "non_linear_resistance"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.electrostatic",
+    "title_zh": "静电场",
+    "title_en": "Electrostatic field",
+    "statement": "电场不随时间变化 (∂E/∂t = 0)",
+    "domain": "electromagnetism",
+    "subdomain": "electrostatics",
+    "invalid_when": ["time_varying_field", "electromagnetic_wave"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.non_relativistic",
+    "title_zh": "非相对论",
+    "title_en": "Non-relativistic",
+    "statement": "速度远小于光速 (v << c)",
+    "domain": "modern_physics",
+    "subdomain": "relativity_boundary",
+    "invalid_when": ["relativistic_speed", "high_energy"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.low_velocity",
+    "title_zh": "低速近似",
+    "title_en": "Low velocity approximation",
+    "statement": "速度远小于波速或光速",
+    "domain": "mechanics",
+    "subdomain": "classical_mechanics",
+    "invalid_when": ["supersonic", "relativistic"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.paraxial",
+    "title_zh": "傍轴近似",
+    "title_en": "Paraxial approximation",
+    "statement": "光线与光轴夹角很小 (sin θ ≈ θ)",
+    "domain": "optics",
+    "subdomain": "geometric_optics",
+    "invalid_when": ["wide_angle", "high_na"],
+    "applies_to_edge_types": ["derives", "approximation_of"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.monochromatic",
+    "title_zh": "单色光",
+    "title_en": "Monochromatic light",
+    "statement": "光波为单一频率",
+    "domain": "optics",
+    "subdomain": "wave_optics",
+    "invalid_when": ["broadband", "white_light"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.isolated_system",
+    "title_zh": "孤立系统",
+    "title_en": "Isolated system",
+    "statement": "系统与外界无能量和物质交换",
+    "domain": "mechanics",
+    "subdomain": "conservation_laws",
+    "invalid_when": ["open_system", "external_force"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  },
+  {
+    "id": "assumption.continuous_medium",
+    "title_zh": "连续介质",
+    "title_en": "Continuous medium",
+    "statement": "物质可视为连续分布，忽略分子结构",
+    "domain": "mechanics",
+    "subdomain": "fluid_mechanics",
+    "invalid_when": ["rarefied_gas", "nanoscale"],
+    "applies_to_edge_types": ["derives"],
+    "source": [{"source_type": "manual", "source_id": "seed"}]
+  }
+]

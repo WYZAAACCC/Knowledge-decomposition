@@ -7,7 +7,7 @@
 from typing import Dict, List, Set, Tuple, Optional, Any
 import networkx as nx
 
-from ..models import Node, Edge, KnowledgeGraph
+from ..models import Node, Edge, KnowledgeGraph, DERIVATION_EDGE_TYPES
 
 
 class GraphValidator:
@@ -37,10 +37,10 @@ class GraphValidator:
         for node in nodes:
             G.add_node(node.id, node_type=node.type)
 
-        # 添加边（只添加derives_from边，因为只有它们需要形成DAG）
+        # Fix 7: 只对推导类边检查DAG
         derivation_edges = []
         for edge in edges:
-            if edge.type == "derives_from":
+            if edge.type in {e.value for e in DERIVATION_EDGE_TYPES}:
                 if edge.from_ not in G or edge.to not in G:
                     errors.append(f"边 {edge.id} 引用了不存在的节点: {edge.from_} -> {edge.to}")
                 else:
@@ -266,8 +266,62 @@ class GraphValidator:
         details.update(connectivity_details)
         details["connected"] = connected
 
+        # Fix 7: 新增语义检查
+        # 7.1 topic必须在节点中
+        topic_in_nodes = any(n.id == graph.topic for n in graph.nodes)
+        if not topic_in_nodes:
+            all_errors.append(f"Topic节点 '{graph.topic}' 不存在于图中")
+        details["topic_exists"] = topic_in_nodes
+
+        # 7.2 每条边端点必须存在
+        node_ids = {n.id for n in graph.nodes}
+        for edge in graph.edges:
+            if edge.from_ not in node_ids:
+                all_errors.append(f"边 {edge.id}: from节点 '{edge.from_}' 不存在")
+            if edge.to not in node_ids:
+                all_errors.append(f"边 {edge.id}: to节点 '{edge.to}' 不存在")
+
+        # 7.3 target必须可由基础节点到达（derivation DAG）
+        try:
+            derivation_G = nx.DiGraph()
+            for n in graph.nodes:
+                derivation_G.add_node(n.id)
+            for e in graph.edges:
+                if e.type in {et.value for et in DERIVATION_EDGE_TYPES}:
+                    if e.from_ in derivation_G and e.to in derivation_G:
+                        derivation_G.add_edge(e.from_, e.to)
+
+            primitive_types = {"concept", "definition", "quantity", "math_tool"}
+            primitive_nodes = [n.id for n in graph.nodes if n.type.value in primitive_types]
+            if primitive_nodes and graph.topic in derivation_G:
+                reachable = any(
+                    nx.has_path(derivation_G, p, graph.topic)
+                    for p in primitive_nodes
+                    if p in derivation_G
+                )
+                if not reachable:
+                    all_errors.append(
+                        f"Topic '{graph.topic}' 不可从基础节点（{primitive_types}）到达"
+                    )
+                details["target_reachable_from_primitives"] = reachable
+        except Exception:
+            details["target_reachable_from_primitives"] = "error"
+
+        # 7.5 不允许孤立节点（application和warning除外）
+        if isolated_nodes:
+            non_allowed_isolated = [
+                n.id for n in isolated_nodes
+                if n.type.value not in {"application", "warning"}
+            ]
+            if non_allowed_isolated:
+                all_errors.append(f"非应用/警告类孤立节点: {non_allowed_isolated[:5]}")
+
         # 总结
-        passed = (dag_valid and path_valid and len(dangling_edges) == 0)
+        passed = (
+            dag_valid and path_valid and topic_in_nodes
+            and len(dangling_edges) == 0
+            and details.get("target_reachable_from_primitives", True) is not False
+        )
         details["passed"] = passed
         details["error_count"] = len(all_errors)
         details["warning_count"] = len(all_warnings)

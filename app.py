@@ -648,16 +648,21 @@ def main():
         if not load_env_file():
             st.warning("未找到.env文件，请先运行安装脚本")
 
+        # Fix 15: API key stored only in session_state, not written to .env
+        stored_key = st.session_state.get("DEEPSEEK_API_KEY", "")
+        env_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        default_key = stored_key or env_key or ""
+
         api_key = st.text_input("DeepSeek API密钥",
-                               value=os.environ.get("DEEPSEEK_API_KEY", ""),
+                               value=default_key,
                                type="password",
-                               help="在DeepSeek官网获取API密钥")
+                               help="在DeepSeek官网获取API密钥。密钥仅保存在当前会话中，不会写入.env文件。")
 
         if api_key and api_key != os.environ.get("DEEPSEEK_API_KEY", ""):
             if api_key.startswith("sk-") or len(api_key) > 20:
                 os.environ["DEEPSEEK_API_KEY"] = api_key
-                _update_env_file("DEEPSEEK_API_KEY", api_key)
-                st.success("API密钥已保存")
+                st.session_state["DEEPSEEK_API_KEY"] = api_key
+                st.success("API密钥已设置（会话有效）")
             else:
                 st.warning("请输入有效的DeepSeek API密钥（以sk-开头）")
 

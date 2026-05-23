@@ -12,6 +12,7 @@ from ..validators.graph_validator import GraphValidator
 from ..validators.assumption_validator import AssumptionValidator
 from ..validators.dimension_validator import DimensionValidator
 from ..validators.duplicate_validator import DuplicateValidator
+from ..validators.placeholder_validator import PlaceholderValidator
 from ..models import KnowledgeGraph
 
 
@@ -36,6 +37,7 @@ class VerifierAgent:
         self.assumption_validator = AssumptionValidator()
         self.dimension_validator = DimensionValidator()
         self.duplicate_validator = DuplicateValidator()
+        self.placeholder_validator = PlaceholderValidator()
 
     def run(self, decomposer_output: Dict[str, Any]) -> VerificationOutput:
         """
@@ -163,6 +165,23 @@ class VerifierAgent:
                 "score": 0.0
             }
 
+        # 6. 占位内容验证 (Fix 5)
+        try:
+            placeholder_result = self.placeholder_validator.validate(subgraph)
+            validation_results["placeholder"] = {
+                "passed": placeholder_result["passed"],
+                "errors": placeholder_result["errors"],
+                "details": placeholder_result["details"],
+                "score": 0.0 if not placeholder_result["passed"] else 1.0,
+            }
+        except Exception as e:
+            validation_results["placeholder"] = {
+                "passed": False,
+                "errors": [f"占位内容验证异常: {e}"],
+                "details": {"exception": str(e)},
+                "score": 0.0,
+            }
+
         # 汇总结果
         all_errors = []
         all_warnings = []
@@ -173,7 +192,6 @@ class VerifierAgent:
             all_warnings.extend(result.get("warnings", []))
 
             if not result.get("passed", True):
-                # 生成修复建议
                 if validator_name == "schema":
                     suggested_actions.append("修复JSON schema不一致")
                 elif validator_name == "graph_structure":
@@ -184,14 +202,17 @@ class VerifierAgent:
                     suggested_actions.append("修复量纲不一致")
                 elif validator_name == "duplicates":
                     suggested_actions.append("合并重复节点")
+                elif validator_name == "placeholder":
+                    suggested_actions.append("移除所有占位文本（待补充/TODO/N/A等）")
 
-        # 计算总体分数
+        # Fix 5: 计算总体分数（含placeholder）
         weights = {
-            "schema": 0.30,
-            "graph_structure": 0.30,
-            "assumptions": 0.20,
+            "schema": 0.25,
+            "graph_structure": 0.25,
+            "placeholder": 0.15,
+            "assumptions": 0.15,
             "dimensions": 0.10,
-            "duplicates": 0.10
+            "duplicates": 0.10,
         }
 
         overall_score = 0.0
@@ -200,9 +221,11 @@ class VerifierAgent:
             score = result.get("score", 0.0)
             overall_score += weight * score
 
+        # Fix 5: placeholder必须通过
         critical_passed = (
             validation_results["schema"]["passed"] and
-            validation_results["graph_structure"]["passed"]
+            validation_results["graph_structure"]["passed"] and
+            validation_results["placeholder"]["passed"]
         )
 
         critical_errors = []
@@ -210,6 +233,8 @@ class VerifierAgent:
             critical_errors.append("Schema验证失败")
         if not validation_results["graph_structure"]["passed"]:
             critical_errors.append("图结构验证失败")
+        if not validation_results["placeholder"]["passed"]:
+            critical_errors.append("占位内容验证失败：图中包含待补充/TODO/N/A等占位文本")
 
         passed = critical_passed and overall_score >= 0.5
 

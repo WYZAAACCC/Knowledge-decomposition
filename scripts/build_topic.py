@@ -4,7 +4,8 @@
 
 用法:
   python build_topic.py --topic "伯努利方程" --down 2 --up 1
-  python build_topic.py --topic "伯努利方程" --config configs/build_config.yaml
+  python build_topic.py --topic "伯努利方程" --offline --strict
+  python build_topic.py --topic "伯努利方程" --allow-proposals --show-proposals
 """
 
 import argparse
@@ -22,7 +23,7 @@ from src.utils.logging import get_default_logger
 
 
 def parse_args():
-    """解析命令行参数"""
+    """Fix 14: 升级CLI参数"""
     parser = argparse.ArgumentParser(description="构建物理知识图谱主题")
     parser.add_argument("--topic", "-t", required=True, help="主题文本")
     parser.add_argument("--down", "-d", type=int, default=3, help="向下展开层数(1-8)")
@@ -32,6 +33,15 @@ def parse_args():
     parser.add_argument("--output-dir", "-o", default="artifacts/latest", help="输出目录")
     parser.add_argument("--verbose", "-v", action="store_true", help="详细输出")
     parser.add_argument("--retries", "-r", type=int, default=1, help="最大重试次数")
+    # Fix 14: 新增参数
+    parser.add_argument("--offline", action="store_true", help="不调用任何LLM，仅使用本地seed")
+    parser.add_argument("--strict", action="store_true", help="不允许proposal/unknown/placeholder进入正式图")
+    parser.add_argument("--no-llm", action="store_true", help="禁止LLM参与图构建")
+    parser.add_argument("--allow-proposals", action="store_true", help="LLM提议保存到proposals.json")
+    parser.add_argument("--show-proposals", action="store_true", help="未验证proposal在graph.html中默认隐藏")
+    parser.add_argument("--fail-on-warning", action="store_true", help="有warning也返回非零exit code")
+    parser.add_argument("--seed-dir", default=None, help="指定seed目录")
+    parser.add_argument("--schema-version", default=None, help="指定schema版本")
 
     return parser.parse_args()
 
@@ -49,11 +59,18 @@ def main():
         logger.setLevel("DEBUG")
 
     logger.info(f"开始构建主题: {args.topic}")
-    logger.info(f"参数: down={args.down}, up={args.up}, max_nodes={args.max_nodes}")
+    logger.info(f"参数: down={args.down}, up={args.up}, max_nodes={args.max_nodes}, "
+                f"offline={args.offline}, strict={args.strict}")
 
     try:
-        # 创建编排器
-        orchestrator = GraphBuildOrchestrator(artifacts_dir=args.output_dir)
+        # 创建编排器 (Fix 14: 传递offline和strict参数)
+        orchestrator = GraphBuildOrchestrator(
+            artifacts_dir=args.output_dir,
+            offline=args.offline,
+            strict=args.strict,
+            no_llm=getattr(args, 'no_llm', False),
+            allow_proposals=args.allow_proposals,
+        )
 
         # 构建主题
         result = orchestrator.build_topic(
@@ -72,7 +89,7 @@ def main():
         if result.status == "success":
             print(f"[OK] 构建成功!")
         elif result.status == "partial_success":
-            print(f"[WARN]  部分成功")
+            print(f"[WARN] 部分成功")
         else:
             print(f"[FAIL] 构建失败")
 
@@ -83,13 +100,13 @@ def main():
             if hasattr(result.graph, 'canonical_path') and result.graph.canonical_path:
                 print(f"   规范路径: {result.graph.canonical_path}")
 
-        print(f"\n[TIME]  耗时:")
+        print(f"\n[TIME] 耗时:")
         for stage, duration in result.timing.items():
             print(f"   {stage}: {duration:.2f}s")
 
         if result.warnings:
-            print(f"\n[WARN]  警告 ({len(result.warnings)}个):")
-            for warning in result.warnings[:3]:  # 只显示前3个
+            print(f"\n[WARN] 警告 ({len(result.warnings)}个):")
+            for warning in result.warnings[:3]:
                 print(f"   - {warning}")
             if len(result.warnings) > 3:
                 print(f"   ... 还有 {len(result.warnings) - 3} 个警告")
@@ -113,8 +130,11 @@ def main():
 
         print("\n" + "=" * 60)
 
-        # 如果失败，返回非零退出码
+        # Fix 14: 根据参数决定退出码
         if result.status == "failed":
+            sys.exit(1)
+        if args.fail_on_warning and result.warnings:
+            print("[FAIL] --fail-on-warning 已启用，存在警告，返回非零退出码")
             sys.exit(1)
 
     except KeyboardInterrupt:
