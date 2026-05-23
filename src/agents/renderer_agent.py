@@ -359,13 +359,18 @@ class RendererAgent:
         colors_json = json.dumps({k: self._get_node_color(k) for k in shape_legend}, ensure_ascii=False)
         shapes_json = json.dumps(shape_legend, ensure_ascii=False)
 
+        # Improvement 6: Cytoscape.js + dagre layout
+        # Improvement 5: 三种视图切换 (decomposition/derivation/application)
+        # Improvement 2: 三层图 (knowledge + assumption + proofstep)
         html_content = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>物理知识图谱 - ''' + graph.topic + '''</title>
-<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js" async id="vis-network-script"></script>
+<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+<script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -510,6 +515,10 @@ body{font-family:"Microsoft YaHei","SimHei","PingFang SC",sans-serif;background:
 <div class="search-results" id="search-results"></div>
 </div>
 <div class="toolbar-separator"></div>
+<!-- Improvement 5: 三种视图切换 -->
+<button onclick="switchView('decomposition')" id="btn-decomp" style="background:#6c5ce7">分解视图</button>
+<button onclick="switchView('derivation')" id="btn-deriv" style="background:#4a6cf7">推导视图</button>
+<button onclick="switchView('application')" id="btn-app" style="background:#00b894">应用视图</button>
 <button onclick="fitNetwork()">适应窗口</button>
 <button onclick="togglePhysics()">切换物理</button>
 <button class="path-highlight-btn" id="btn-highlight-canonical" onclick="highlightCanonicalPath()">规范路径</button>
@@ -576,9 +585,10 @@ var rawNodes=graphData.nodes;
 var rawEdges=graphData.edges;
 var nodeTypeColors=JSON.parse('__COLORS_JSON__');
 var shapeLegend=JSON.parse('__SHAPES_JSON__');
-var network=null;
+var cy=null;
 var physicsEnabled=true;
-var visLoaded=false;
+var currentView='derivation';
+var visLoaded=true;
 var topic_id="''' + topic_id + '''";
 
 var nodeDetailsMap={};
@@ -792,80 +802,58 @@ sameLevelDerives.forEach(function(e){
     });
 });
 
-function initVisNetwork(){
+function initGraph(){
     visLoaded=true;
     var container=document.getElementById('network-container');
-    var data={nodes:new vis.DataSet(visNodes),edges:new vis.DataSet(visEdges)};
-    window.levelSep=parseInt(localStorage.getItem('pg_levelSep'))||450;
-    window.nodeSpac=parseInt(localStorage.getItem('pg_nodeSpac'))||400;
-    var options={
-        layout:{
-            hierarchical:{
-                enabled:true,
-                direction:'DU',
-                sortMethod:'hubsize',
-                levelSeparation:window.levelSep,
-                nodeSpacing:window.nodeSpac,
-                blockShifting:true,
-                edgeMinimization:true,
-                parentCentralization:true,
-                shakeTowards:'roots'
-            }
-        },
-        nodes:{
-            font:{size:16,color:'#333',face:'"Microsoft YaHei","SimHei","PingFang SC",sans-serif',multi:true,strokeWidth:4,strokeColor:'#fff'},
-            shadow:{enabled:true,color:'rgba(0,0,0,0.1)',size:8,x:2,y:2},
-            borderWidth:2,
-            borderWidthSelected:4,
-            chosen:false
-        },
-        edges:{
-            arrows:{to:{enabled:true,scaleFactor:1.0,type:'arrow'}},
-            width:2.5,
-            smooth:{enabled:true,type:'cubicBezier',roundness:0.5},
-            shadow:false,
-            font:{size:12,color:'#666',face:'"Microsoft YaHei","SimHei","PingFang SC",sans-serif',align:'middle',multi:true,strokeWidth:3,strokeColor:'#fff'},
-            labelHighlightBold:true
-        },
-        physics:{
-            enabled:true,
-            stabilization:{enabled:true,iterations:1000,updateInterval:10,fit:true},
-            hierarchicalRepulsion:{centralGravity:0.0,springLength:levelSep*0.8,springConstant:0.001,nodeDistance:nodeSpac,damping:0.95,avoidOverlap:1.0},
-            maxVelocity:50,
-            minVelocity:0.1,
-            solver:'hierarchicalRepulsion',
-            timestep:0.5,
-            adaptiveTimestep:true
-        },
-        interaction:{
-            hover:false,
-            tooltipDelay:99999,
-            dragNodes:true,
-            dragView:true,
-            zoomView:true,
-            selectable:true,
-            multiselect:false,
-            keyboard:{enabled:true},
-            navigationButtons:false,
-            zoomSpeed:0.5,
-            hoverConnectedEdges:false
-        }
-    };
-    network=new vis.Network(container,data,options);
-    network.once('stabilizationIterationsDone',function(){
-        network.setOptions({physics:{enabled:false}});
-        physicsEnabled=false;
-        network.fit({padding:40,animation:{duration:600,easingFunction:'easeInOutQuad'}});
-        updateZoomLevel();
+
+    // Improvement 6: Cytoscape.js initialization
+    cy=cytoscape({
+        container:container,
+        elements:{nodes:visNodes,edges:visEdges},
+        style:[
+            {selector:'node',style:{'label':'data(label)','text-valign':'center','text-halign':'center','font-size':14,'color':'#fff','text-outline-width':2,'text-outline-color':'#555','background-color':'#4a6cf7','border-width':2,'border-color':'#3451d1','shape':'ellipse','width':'mapData(importance,0,10,40,100)','height':'mapData(importance,0,10,40,100)'}},
+            {selector:'node[group="concept"]',style:{'background-color':'#4A90D9','shape':'ellipse'}},
+            {selector:'node[group="quantity"]',style:{'background-color':'#50C878','shape':'ellipse'}},
+            {selector:'node[group="definition"]',style:{'background-color':'#9370DB','shape':'rectangle'}},
+            {selector:'node[group="law"]',style:{'background-color':'#FF6B6B','shape':'hexagon'}},
+            {selector:'node[group="equation"]',style:{'background-color':'#FFA500','shape':'rectangle'}},
+            {selector:'node[group="assumption"]',style:{'background-color':'#87CEEB','shape':'diamond','border-style':'dashed'}},
+            {selector:'node[group="application"]',style:{'background-color':'#FFD700','shape':'roundrectangle'}},
+            {selector:'node[group="warning"]',style:{'background-color':'#FF4500','shape':'triangle'}},
+            {selector:'node[group="math_tool"]',style:{'background-color':'#98FB98','shape':'star'}},
+            {selector:'node[is_main]',style:{'background-color':'#e74c3c','border-width':6,'border-color':'#c0392b','font-size':22,'width':120,'height':120}},
+            {selector:'edge',style:{'width':2,'line-color':'#aaa','target-arrow-color':'#aaa','target-arrow-shape':'triangle','curve-style':'bezier','arrow-scale':1.2}},
+            {selector:'edge[type="derives"]',style:{'line-color':'#4a6cf7','target-arrow-color':'#4a6cf7','width':3}},
+            {selector:'edge[type="derives_from"]',style:{'line-color':'#4a6cf7','target-arrow-color':'#4a6cf7','width':3}},
+            {selector:'edge[type="requires"]',style:{'line-color':'#e17055','target-arrow-color':'#e17055','line-style':'dashed'}},
+            {selector:'edge[type="assumes"]',style:{'line-color':'#f39c12','target-arrow-color':'#f39c12','line-style':'dotted'}},
+            {selector:'edge[type="uses_math"]',style:{'line-color':'#00b894','target-arrow-color':'#00b894','line-style':'dashed'}},
+            {selector:'edge[type="applies_to"]',style:{'line-color':'#6c5ce7','target-arrow-color':'#6c5ce7','line-style':'dashed'}},
+            {selector:'edge[dashes]',style:{'line-style':'dashed','line-color':'#ff6b6b','target-arrow-color':'#ff6b6b'}},
+            // Improvement 2: proofstep nodes as diamonds
+            {selector:'node[group="proof_step"]',style:{'background-color':'#fd79a8','shape':'diamond','width':50,'height':50,'font-size':11}},
+        ],
+        layout:{name:'dagre',rankDir:'LR',nodeSep:60,rankSep:150,fit:true,padding:40,animate:true,animationDuration:500},
+        wheelSensitivity:0.3,
+        minZoom:0.1,
+        maxZoom:5,
     });
-    network.on('click',function(params){
-        if(params.nodes.length>0){
-            var nodeId=params.nodes[0];
-            var origColor=nodeOrigColors[nodeId];
-            if(origColor){
-                network.body.data.nodes.update({id:nodeId,color:JSON.parse(JSON.stringify(origColor))});
-            }
-            if(mergeNodeDetails[nodeId]){
+
+    cy.on('tap','node',function(evt){
+        var nodeId=evt.target.id();
+        showNodeDetail(nodeId);
+    });
+    cy.on('tap','edge',function(evt){
+        var edgeId=evt.target.id();
+        showEdgeDetail(edgeId);
+    });
+    cy.on('tap',function(evt){
+        if(evt.target===cy){showDefaultDetail();}
+    });
+
+    // zoom controls
+    window.cy=cy;
+    updateZoomLevel();
                 showMergeDetails(nodeId);
             }else{
                 showNodeDetails(nodeId);
@@ -890,7 +878,7 @@ function initVisNetwork(){
             var origColor=nodeOrigColors[nodeId];
             if(origColor){
                 setTimeout(function(){
-                    network.body.data.nodes.update({id:nodeId,color:JSON.parse(JSON.stringify(origColor))});
+                    cy.nodes().update({id:nodeId,color:JSON.parse(JSON.stringify(origColor))});
                 },10);
             }
         }
@@ -899,7 +887,7 @@ function initVisNetwork(){
         params.previousSelection.nodes.forEach(function(nodeId){
             var origColor=nodeOrigColors[nodeId];
             if(origColor){
-                network.body.data.nodes.update({id:nodeId,color:JSON.parse(JSON.stringify(origColor))});
+                cy.nodes().update({id:nodeId,color:JSON.parse(JSON.stringify(origColor))});
             }
         });
     });
@@ -1074,32 +1062,58 @@ function hideDetails(){
 }
 
 function fitNetwork(){
-    if(visLoaded&&network){network.fit({padding:50,animation:{duration:500,easingFunction:'easeInOutQuad'}});updateZoomLevel()}
+    if(cy){cy.fit(null,50);updateZoomLevel();}
 }
 function zoomIn(){
-    if(!visLoaded||!network)return;
-    var scale=network.getScale();
-    network.moveTo({scale:scale*1.3,animation:{duration:300,easingFunction:'easeInOutQuad'}});
+    if(!cy)return;
+    cy.zoom({level:cy.zoom()*1.3,renderedPosition:{x:cy.width()/2,y:cy.height()/2}});
     setTimeout(updateZoomLevel,350);
 }
 function zoomOut(){
-    if(!visLoaded||!network)return;
-    var scale=network.getScale();
-    network.moveTo({scale:scale/1.3,animation:{duration:300,easingFunction:'easeInOutQuad'}});
+    if(!cy)return;
+    cy.zoom({level:cy.zoom()/1.3,renderedPosition:{x:cy.width()/2,y:cy.height()/2}});
     setTimeout(updateZoomLevel,350);
 }
 function updateZoomLevel(){
-    if(!visLoaded||!network)return;
+    if(!cy)return;
     var el=document.getElementById('zoom-level');
     if(!el)return;
-    var scale=network.getScale();
-    var pct=Math.round(scale*100);
+    var pct=Math.round(cy.zoom()*100);
     el.textContent=pct+'%';
 }
+
+// Improvement 5: 三种视图切换
+function switchView(view){
+    currentView=view;
+    if(!cy)return;
+    var derivEdges=cy.edges('[type="derives"],[type="derives_from"],[type="requires"],[type="uses_math"]');
+    var appEdges=cy.edges('[type="applies_to"]');
+    var decompEdges=cy.edges('[type="requires"],[type="uses_math"],[type="assumes"]');
+    if(view==='decomposition'){
+        // 分解视图：显示所有依赖关系（目标向下分解）
+        cy.elements().style('display','element');
+    }else if(view==='derivation'){
+        // 推导视图：基础→结论，隐藏应用边
+        appEdges.style('display','none');
+        derivEdges.style('display','element');
+        cy.layout({name:'dagre',rankDir:'LR',nodeSep:60,rankSep:150,fit:true,padding:40,animate:true}).run();
+    }else if(view==='application'){
+        // 应用视图：目标→应用
+        derivEdges.style('display','none');
+        appEdges.style('display','element');
+        cy.layout({name:'dagre',rankDir:'LR',nodeSep:60,rankSep:150,fit:true,padding:40,animate:true}).run();
+    }
+    // 更新按钮样式
+    ['decomposition','derivation','application'].forEach(function(v){
+        var btn=document.getElementById('btn-'+v.substring(0,4));
+        if(btn)btn.style.opacity=v===view?'1.0':'0.6';
+    });
+}
 function togglePhysics(){
-    if(!visLoaded||!network)return;
+    // Cytoscape uses static layout, physics toggle toggles drag
+    if(!cy)return;
     physicsEnabled=!physicsEnabled;
-    network.setOptions({physics:{enabled:physicsEnabled}});
+    cy.nodes().forEach(function(n){n.grabbable(physicsEnabled);});
 }
 function toggleHeader(){
     var h=document.getElementById('header');
@@ -1141,16 +1155,16 @@ function filterByType(type){
         var nodeUpdates=[];var edgeUpdates=[];
         visNodes.forEach(function(n){nodeUpdates.push({id:n.id,opacity:1.0,hidden:false})});
         visEdges.forEach(function(e){edgeUpdates.push({id:e.id,opacity:1.0,hidden:false})});
-        network.body.data.nodes.update(nodeUpdates);
-        network.body.data.edges.update(edgeUpdates);
+        cy.nodes().update(nodeUpdates);
+        cy.edges().update(edgeUpdates);
         return;
     }
     var typeIds={};visNodes.forEach(function(n){if(n.group===type||n.id.startsWith('merge_'))typeIds[n.id]=true});
     var nodeUpdates=[];var edgeUpdates=[];
     visNodes.forEach(function(n){nodeUpdates.push({id:n.id,opacity:typeIds[n.id]?1.0:0.1,hidden:false})});
     visEdges.forEach(function(e){edgeUpdates.push({id:e.id,opacity:(typeIds[e.from]&&typeIds[e.to])?1.0:0.05,hidden:false})});
-    network.body.data.nodes.update(nodeUpdates);
-    network.body.data.edges.update(edgeUpdates);
+    cy.nodes().update(nodeUpdates);
+    cy.edges().update(edgeUpdates);
 }
 
 function generateLegend(){
@@ -1237,8 +1251,8 @@ function highlightCanonicalPath(){
             e.opacity=0.15;e.width=1;
         }
     });
-    network.body.data.nodes.update(nodeUpdates);
-    network.body.data.edges.update(edgeUpdates);
+    cy.nodes().update(nodeUpdates);
+    cy.edges().update(edgeUpdates);
     document.getElementById('btn-highlight-canonical').classList.add('active');
 }
 
@@ -1269,8 +1283,8 @@ function highlightAllPaths(){
             e.opacity=0.1;e.width=1;
         }
     });
-    network.body.data.nodes.update(nodeUpdates);
-    network.body.data.edges.update(edgeUpdates);
+    cy.nodes().update(nodeUpdates);
+    cy.edges().update(edgeUpdates);
     document.getElementById('btn-highlight-all').classList.add('active');
 }
 
@@ -1286,8 +1300,8 @@ function clearHighlight(){
         edgeUpdates.push({id:e.id,width:undefined,dashes:undefined,opacity:undefined});
         e.width=undefined;e.dashes=undefined;e.opacity=undefined;
     });
-    network.body.data.nodes.update(nodeUpdates);
-    network.body.data.edges.update(edgeUpdates);
+    cy.nodes().update(nodeUpdates);
+    cy.edges().update(edgeUpdates);
     document.querySelectorAll('.path-highlight-btn').forEach(function(b){b.classList.remove('active')});
 }
 
@@ -1339,14 +1353,14 @@ function updateLayout(){
     localStorage.setItem('pg_levelSep',levelSep);
     localStorage.setItem('pg_nodeSpac',nodeSpac);
     if(!network)return;
-    network.setOptions({
+    // cy.style().update...({
         layout:{hierarchical:{levelSeparation:levelSep,nodeSpacing:nodeSpac}},
         physics:{enabled:true,stabilization:{enabled:true,iterations:200,updateInterval:10,fit:false}}
     });
     network.once('stabilizationIterationsDone',function(){
-        network.setOptions({physics:{enabled:false}});
+        // cy.style().update...({physics:{enabled:false}});
         physicsEnabled=false;
-        network.fit({padding:40,animation:{duration:400,easingFunction:'easeInOutQuad'}});
+        cy.fit({padding:40,animation:{duration:400,easingFunction:'easeInOutQuad'}});
     });
 }
 
@@ -1467,8 +1481,8 @@ function clearHoverHighlight(){
         }
     });
     if(network){
-        if(nodeUpdates.length>0)network.body.data.nodes.update(nodeUpdates);
-        if(edgeUpdates.length>0)network.body.data.edges.update(edgeUpdates);
+        if(nodeUpdates.length>0)cy.nodes().update(nodeUpdates);
+        if(edgeUpdates.length>0)cy.edges().update(edgeUpdates);
     }
     highlightedNodes.clear();
     highlightedEdges.clear();
@@ -1499,8 +1513,8 @@ function applyHoverHighlight(nodeId){
         }
     });
     if(network){
-        network.body.data.nodes.update(nodeUpdates);
-        network.body.data.edges.update(edgeUpdates);
+        cy.nodes().update(nodeUpdates);
+        cy.edges().update(edgeUpdates);
     }
 }
 
@@ -1590,10 +1604,10 @@ document.addEventListener('mouseup',function(){
 var initAttempted=false;
 function attemptInit(){
     if(initAttempted)return;
-    if(typeof vis!=='undefined'&&vis.Network){
+    if(typeof cytoscape!=='undefined'){
         initAttempted=true;
         document.getElementById('loading-indicator').style.display='none';
-        initVisNetwork();
+        initGraph();
         generateLegend();
     }
 }
@@ -1603,7 +1617,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var checks=0;
     var checkInterval=setInterval(function(){
         checks++;
-        if(typeof vis!=='undefined'&&vis.Network){
+        if(typeof cytoscape!=='undefined'){
             clearInterval(checkInterval);
             attemptInit();
         }else if(checks>=6){
@@ -1613,7 +1627,7 @@ document.addEventListener('DOMContentLoaded',function(){
                 document.getElementById('loading-indicator').style.display='none';
                 var statusEl=document.getElementById('render-status');
                 statusEl.style.display='block';
-                statusEl.innerHTML='⚠️ vis-network CDN加载失败，请检查网络连接后刷新页面';
+                statusEl.innerHTML='⚠️ Cytoscape.js CDN加载失败，请检查网络连接后刷新页面';
             }
         }
     },500);

@@ -104,7 +104,7 @@ class DecomposerAgent:
         topic = target if re.match(r'^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$', target or '') else "empty.topic"
         placeholder = Node(
             id="node.empty_placeholder", type=NodeType.CONCEPT, title="空图谱占位节点",
-            statement="构建失败，无有效节点", formula_latex="N/A",
+            statement="构建失败，无有效节点", formula_latex="",
             domain=Domain.MECHANICS, abstraction_level=1, pedagogical_level=1,
             theory_context="classical", sources=["placeholder"]
         )
@@ -256,7 +256,7 @@ class DecomposerAgent:
                 statement=item.get("statement", "") or new_id,
                 formula_latex=formula, domain=domain,
                 abstraction_level=abs_level, pedagogical_level=ped_level,
-                theory_context=theory_ctx, sources=["LLM_generated"]
+                theory_context=theory_ctx, sources=["llm_proposal"]
             )
         except Exception as e:
             print(f"警告: 创建新节点失败 {new_id}: {e}")
@@ -324,9 +324,9 @@ class DecomposerAgent:
 
         if edge_type == "derives_from":
             if not assumptions:
-                assumptions = ["假设条件待补充"]
+                assumptions = []
             if not derivation_steps:
-                derivation_steps = ["推导步骤待补充"]
+                derivation_steps = []
 
         try:
             return Edge(
@@ -360,7 +360,7 @@ class DecomposerAgent:
 
         target_node = Node(
             id=target_sanitized, type=node_type, title=cn_topic,
-            statement=topic_definition, formula_latex="N/A",
+            statement=topic_definition, formula_latex="",
             domain=domain, abstraction_level=5, pedagogical_level=3,
             theory_context=theory_ctx, sources=["forced_target"]
         )
@@ -755,8 +755,8 @@ class DecomposerAgent:
                 new_node = Node(
                     id=node_id, type=node_type,
                     title=item.get("title", ""),
-                    statement=item.get("statement", "") or item.get("title", "") or "待补充",
-                    formula_latex=item.get("formula_latex", "") or "N/A",
+                    statement=item.get("statement", "") or item.get("title", ""),
+                    formula_latex=item.get("formula_latex", "") or "",
                     domain=domain, abstraction_level=abs_level,
                     pedagogical_level=ped_level, theory_context=theory_ctx,
                     sources=[f"llm_stage{stage}"]
@@ -780,9 +780,9 @@ class DecomposerAgent:
 
                 if edge_type == "derives_from":
                     if not assumptions:
-                        assumptions = ["假设条件待补充"]
+                        assumptions = []
                     if not derivation_steps:
-                        derivation_steps = ["推导步骤待补充"]
+                        derivation_steps = []
 
                 from_id = (item.get("from") or item.get("from_node") or
                            item.get("source") or item.get("src") or "")

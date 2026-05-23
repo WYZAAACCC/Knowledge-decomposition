@@ -6,9 +6,22 @@
 
 from __future__ import annotations
 
+import hashlib
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+
+def make_edge_id(edge_type: str, from_id: str, to_id: str) -> str:
+    """Fix 16: 稳定Edge ID生成"""
+    digest = hashlib.sha1(f"{edge_type}|{from_id}|{to_id}".encode()).hexdigest()[:10]
+    return f"edge.{edge_type}.{digest}"
+
+
+def make_proof_step_id(operation: str, output_id: str) -> str:
+    """Fix 16: 稳定ProofStep ID生成"""
+    digest = hashlib.sha1(f"{operation}|{output_id}".encode()).hexdigest()[:10]
+    return f"proofstep.{operation}.{digest}"
 
 
 # ===== 枚举类型 =====

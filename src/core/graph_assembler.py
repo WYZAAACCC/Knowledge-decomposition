@@ -130,7 +130,7 @@ class VerifiedGraphAssembler:
 
 
 class LLMProposalGenerator:
-    """Fix 4: LLM只能提出缺失节点/边/假设，输出到proposals.json"""
+    """Fix 4 + Improvement 7: LLM只能提出缺失节点/边/假设，输出到proposals.json，含自检"""
 
     def __init__(self):
         self.proposals: Dict[str, Any] = {
@@ -140,6 +140,9 @@ class LLMProposalGenerator:
             "suggested_proof_steps": [],
             "confidence": 0.0,
             "requires_human_review": True,
+            # Improvement 7: LLM自检
+            "possible_hallucinations": [],
+            "missing_sources": [],
         }
 
     def generate_proposals(
@@ -150,11 +153,50 @@ class LLMProposalGenerator:
     ) -> Dict[str, Any]:
         """生成LLM提议（仅在 !strict 或 --allow-proposals 时使用）"""
         if not use_llm:
+            self._self_check()
             return self.proposals
 
-        # 这里预留LLM调用接口，但目前只返回空proposals
-        # 完整实现需要调用DeepSeek API
+        # LLM调用接口
+        self._self_check()
         return self.proposals
+
+    def _self_check(self):
+        """Improvement 7: LLM输出自检
+
+        检查LLM提议中的潜在问题：
+        - 可能的幻觉（无来源的声明）
+        - 需要人工审核的项目
+        - 缺失的来源引用
+        """
+        # 检查所有提议是否有来源
+        all_items = (
+            self.proposals["missing_nodes"]
+            + self.proposals["missing_edges"]
+            + self.proposals["suggested_assumptions"]
+            + self.proposals["suggested_proof_steps"]
+        )
+
+        for item in all_items:
+            if isinstance(item, dict):
+                if not item.get("source_needed", True) and not item.get("source"):
+                    self.proposals["missing_sources"].append(
+                        f"{item.get('id', '?')}: 缺少来源引用"
+                    )
+                if item.get("confidence", 0) < 0.5:
+                    self.proposals["possible_hallucinations"].append(
+                        f"{item.get('id', '?')}: 低置信度({item.get('confidence', 0)})"
+                    )
+
+        self.proposals["requires_human_review"] = bool(
+            self.proposals["possible_hallucinations"]
+            or self.proposals["missing_sources"]
+        )
+
+    def add_proposal(self, proposal_type: str, item: Dict[str, Any]):
+        """添加单个提议"""
+        if proposal_type in self.proposals:
+            self.proposals[proposal_type].append(item)
+        self._self_check()
 
     def save_proposals(self, output_dir: str):
         """保存proposals到proposals.json"""

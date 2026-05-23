@@ -439,6 +439,21 @@ class GraphBuildOrchestrator:
         if not graph.nodes:
             self.errors.append("图谱为空")
             return "failed"
+
+        # Fix 2: strict模式下强制检查LLM污染
+        if self.strict:
+            forbidden_levels = {TrustLevel.LLM_PROPOSAL, TrustLevel.AUTO_GENERATED, TrustLevel.UNKNOWN}
+            llm_nodes = [n for n in graph.nodes
+                         if getattr(n, 'trust_level', TrustLevel.SEED) in forbidden_levels]
+            llm_edges = [e for e in graph.edges
+                         if getattr(e, 'trust_level', TrustLevel.SEED) in forbidden_levels]
+            if llm_nodes or llm_edges:
+                self.errors.append(
+                    f"Strict模式: 图中包含LLM生成内容 "
+                    f"({len(llm_nodes)}个节点, {len(llm_edges)}条边)"
+                )
+                return "failed"
+
         if verification_output and not verification_output.passed:
             if verification_output.overall_score >= 0.3:
                 self.warnings.append("验证未完全通过，但分数达到阈值")
