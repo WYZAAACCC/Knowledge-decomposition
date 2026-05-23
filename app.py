@@ -134,6 +134,9 @@ def run_build_process(topic, down_levels, up_levels, max_nodes, output_queue, pr
             "--verbose"
         ]
 
+        # Fix 15: 增加超时保护，防止 stdout/stderr 死锁
+        BUILD_TIMEOUT = 600  # 10分钟超时
+
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=False, cwd=script_dir, bufsize=1
@@ -141,47 +144,52 @@ def run_build_process(topic, down_levels, up_levels, max_nodes, output_queue, pr
 
         stdout_lines, stderr_lines, progress_updates = [], [], []
 
-        while True:
-            stdout_bytes = process.stdout.readline()
-            if stdout_bytes:
-                stdout_line = _decode_line(stdout_bytes)
-                stdout_lines.append(stdout_line)
-                parsed = parse_progress_line(stdout_line)
-                if parsed:
-                    progress_updates.append(parsed)
-                    if progress_callback:
-                        progress_callback(parsed)
-
-            stderr_bytes = process.stderr.readline()
-            if stderr_bytes:
-                stderr_line = _decode_line(stderr_bytes)
-                stderr_lines.append(stderr_line)
-                parsed = parse_progress_line(stderr_line)
-                if parsed:
-                    progress_updates.append(parsed)
-                    if progress_callback:
-                        progress_callback(parsed)
-
-            if process.poll() is not None:
-                for byte_line in process.stdout:
-                    line = _decode_line(byte_line)
-                    stdout_lines.append(line)
-                    parsed = parse_progress_line(line)
+        try:
+            while True:
+                stdout_bytes = process.stdout.readline()
+                if stdout_bytes:
+                    stdout_line = _decode_line(stdout_bytes)
+                    stdout_lines.append(stdout_line)
+                    parsed = parse_progress_line(stdout_line)
                     if parsed:
                         progress_updates.append(parsed)
                         if progress_callback:
                             progress_callback(parsed)
-                for byte_line in process.stderr:
-                    line = _decode_line(byte_line)
-                    stderr_lines.append(line)
-                    parsed = parse_progress_line(line)
+
+                stderr_bytes = process.stderr.readline()
+                if stderr_bytes:
+                    stderr_line = _decode_line(stderr_bytes)
+                    stderr_lines.append(stderr_line)
+                    parsed = parse_progress_line(stderr_line)
                     if parsed:
                         progress_updates.append(parsed)
                         if progress_callback:
                             progress_callback(parsed)
-                break
 
-        returncode = process.wait()
+                if process.poll() is not None:
+                    for byte_line in process.stdout:
+                        line = _decode_line(byte_line)
+                        stdout_lines.append(line)
+                        parsed = parse_progress_line(line)
+                        if parsed:
+                            progress_updates.append(parsed)
+                            if progress_callback:
+                                progress_callback(parsed)
+                    for byte_line in process.stderr:
+                        line = _decode_line(byte_line)
+                        stderr_lines.append(line)
+                        parsed = parse_progress_line(line)
+                        if parsed:
+                            progress_updates.append(parsed)
+                            if progress_callback:
+                                progress_callback(parsed)
+                    break
+
+            returncode = process.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+            raise RuntimeError(f"构建超时（{BUILD_TIMEOUT}秒）")
         all_output = stdout_lines + stderr_lines
         error_fixes = detect_and_fix_errors(all_output)
 

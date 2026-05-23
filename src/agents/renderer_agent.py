@@ -7,12 +7,12 @@ RendererAgent
 
 import json
 import time
-import base64
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 
 from ..models import KnowledgeGraph
+from ..core.view_model import GraphViewModel, NODE_STYLE_REGISTRY
 
 
 @dataclass
@@ -323,84 +323,41 @@ class RendererAgent:
         return color_map.get(edge_type, '#888888')
 
     def _generate_graph_html(self, graph: KnowledgeGraph, output_path: Path):
-        nodes_data = []
+        # Fix 10: Use GraphViewModel for consistent, safe data
+        view_model = GraphViewModel.from_graph(graph)
+        nodes_data = view_model["nodes"]
+        edges_data = view_model["edges"]
+
+        # Main node identification
         main_node_id = graph.topic.replace(' ', '_')
-        best_main_candidate = None
-        best_main_level = -1
-        for node in graph.nodes:
-            nid = node.id
-            if nid == main_node_id or nid == main_node_id.lower():
-                best_main_candidate = nid
+        for n in nodes_data:
+            if n["id"] == main_node_id or n["id"] == main_node_id.lower():
+                main_node_id = n["id"]
                 break
-            if main_node_id in nid or nid in main_node_id:
-                nl = getattr(node, 'abstraction_level', 0)
-                if nl > best_main_level:
-                    best_main_level = nl
-                    best_main_candidate = nid
-        if best_main_candidate:
-            main_node_id = best_main_candidate
-        for node in graph.nodes:
-            cn_title = getattr(node, 'title', '') or node.id
-            nd = {
-                'id': node.id,
-                'label': cn_title,
-                'cn_title': cn_title,
-                'group': node.type,
-                'shape': self._get_node_shape(node.type),
-                'color': self._get_node_color_obj(node.type),
-                'level': getattr(node, 'abstraction_level', 2),
-                'statement': getattr(node, 'statement', '') or '',
-                'formula_latex': getattr(node, 'formula_latex', '') or '',
-                'domain': getattr(node, 'domain', ''),
-                'aliases': getattr(node, 'aliases', []) or [],
-                'dimension': None,
-                'is_main': node.id == main_node_id,
-            }
-            if hasattr(node, 'dimension') and node.dimension:
-                nd['dimension'] = {'symbol': node.dimension.symbol, 'unit': node.dimension.unit}
-            nodes_data.append(nd)
 
-        edges_data = []
-        for edge in graph.edges:
-            ed = {
-                'id': edge.id,
-                'from': edge.from_,
-                'to': edge.to,
-                'type': edge.type,
-                'path_id': getattr(edge, 'path_id', ''),
-                'assumptions': getattr(edge, 'assumptions', []) or [],
-                'derivation_steps': getattr(edge, 'derivation_steps', []) or [],
-                'math_used': getattr(edge, 'math_used', []) or [],
-                'approximation_tags': getattr(edge, 'approximation_tags', []) or [],
-                'confidence': getattr(edge, 'confidence', None),
-            }
-            edges_data.append(ed)
-
+        # Type counts from view model
         node_type_counts = {}
-        for node in graph.nodes:
-            node_type_counts[node.type] = node_type_counts.get(node.type, 0) + 1
+        for n in nodes_data:
+            t = n.get("type", "unknown")
+            node_type_counts[t] = node_type_counts.get(t, 0) + 1
         node_types_str = "\n".join([f"{ntype}: {count}" for ntype, count in sorted(node_type_counts.items())])
 
-        shape_legend = {
-            'law': {'shape': 'diamond', 'label': '定律/法则'},
-            'equation': {'shape': 'diamond', 'label': '方程'},
-            'concept': {'shape': 'circle', 'label': '概念'},
-            'quantity': {'shape': 'hexagon', 'label': '物理量'},
-            'assumption': {'shape': 'triangleDown', 'label': '假设'},
-            'math_tool': {'shape': 'star', 'label': '数学工具'},
-            'definition': {'shape': 'box', 'label': '定义'},
-            'model': {'shape': 'square', 'label': '模型'},
-            'application': {'shape': 'ellipse', 'label': '应用'},
-            'experiment': {'shape': 'triangle', 'label': '实验'},
-            'warning': {'shape': 'triangle', 'label': '警告'},
-            'intuition_card': {'shape': 'box', 'label': '直觉卡'},
+        # Fix 10: Use unified NODE_STYLE_REGISTRY for legend
+        shape_legend = {}
+        legend_labels = {
+            'law': '定律/法则', 'equation': '方程', 'concept': '概念',
+            'quantity': '物理量', 'assumption': '假设', 'math_tool': '数学工具',
+            'definition': '定义', 'model': '模型', 'application': '应用',
+            'experiment': '实验', 'warning': '警告', 'intuition_card': '直觉卡',
         }
+        for ntype, style in NODE_STYLE_REGISTRY.items():
+            shape_legend[ntype] = {"shape": style["shape"], "label": legend_labels.get(ntype, ntype)}
 
         topic_id = graph.topic.replace(' ', '_')
-        nodes_b64 = base64.b64encode(json.dumps(nodes_data, ensure_ascii=False).encode('utf-8')).decode('ascii')
-        edges_b64 = base64.b64encode(json.dumps(edges_data, ensure_ascii=False).encode('utf-8')).decode('ascii')
-        colors_b64 = base64.b64encode(json.dumps({k: self._get_node_color(k) for k in shape_legend}, ensure_ascii=False).encode('utf-8')).decode('ascii')
-        shapes_b64 = base64.b64encode(json.dumps(shape_legend, ensure_ascii=False).encode('utf-8')).decode('ascii')
+        # Fix 10: Use safe JSON script tag injection instead of base64
+        graph_json_str = GraphViewModel.to_json_script(graph)
+        colors_json = json.dumps({k: self._get_node_color(k) for k in shape_legend}, ensure_ascii=False)
+        shapes_json = json.dumps(shape_legend, ensure_ascii=False)
 
         html_content = '''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -615,11 +572,10 @@ body{font-family:"Microsoft YaHei","SimHei","PingFang SC",sans-serif;background:
 </div>
 </div>
 <script>
-function b64DecodeUnicode(str){var binaryStr=atob(str);var bytes=new Uint8Array(binaryStr.length);for(var i=0;i<binaryStr.length;i++){bytes[i]=binaryStr.charCodeAt(i)}var decoder=new TextDecoder('utf-8');return decoder.decode(bytes)}
-var rawNodes=JSON.parse(b64DecodeUnicode("__NODES_B64__"));
-var rawEdges=JSON.parse(b64DecodeUnicode("__EDGES_B64__"));
-var nodeTypeColors=JSON.parse(b64DecodeUnicode("__COLORS_B64__"));
-var shapeLegend=JSON.parse(b64DecodeUnicode("__SHAPES_B64__"));
+var rawNodes=graphData.nodes;
+var rawEdges=graphData.edges;
+var nodeTypeColors=JSON.parse('__COLORS_JSON__');
+var shapeLegend=JSON.parse('__SHAPES_JSON__');
 var network=null;
 var physicsEnabled=true;
 var visLoaded=false;
@@ -1669,7 +1625,8 @@ document.addEventListener('DOMContentLoaded',function(){
         with open(output_path, 'w', encoding='utf-8') as f:
             canonical_path_val = graph.canonical_path or ''
             alternate_paths_val = json.dumps(graph.alternate_paths or [], ensure_ascii=False)
-            final_html = html_content.replace('__NODES_B64__', nodes_b64).replace('__EDGES_B64__', edges_b64).replace('__COLORS_B64__', colors_b64).replace('__SHAPES_B64__', shapes_b64).replace('__CANONICAL_PATH__', canonical_path_val).replace('__ALTERNATE_PATHS__', alternate_paths_val)
+            # Fix 10: Safe JSON injection via script tag
+            final_html = html_content.replace('__GRAPH_DATA__', graph_json_str).replace('__COLORS_JSON__', colors_json).replace('__SHAPES_JSON__', shapes_json).replace('__CANONICAL_PATH__', canonical_path_val).replace('__ALTERNATE_PATHS__', alternate_paths_val)
             f.write(final_html)
 
     def _reconstruct_path(self, path_edges: List) -> List[str]:

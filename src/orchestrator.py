@@ -22,6 +22,7 @@ from .agents.ranker_agent import RankerAgent, RankerOutput
 from .agents.renderer_agent import RendererAgent, RendererOutput
 from .loader import DataLoader
 from .models import KnowledgeGraph, ValidationSummary, BuildMetadata, TrustLevel
+from .core.graph_assembler import VerifiedGraphAssembler, LLMProposalGenerator
 from .utils.logging import get_default_logger
 
 
@@ -148,6 +149,9 @@ class GraphBuildOrchestrator:
         self.planner = PlannerAgent(self.loader)
         self.retriever = RetrieverAgent(self.loader)
         self.decomposer = DecomposerAgent(self.loader)
+        # Fix 4: 新增 VerifiedGraphAssembler + LLMProposalGenerator
+        self.assembler = VerifiedGraphAssembler(strict=self.strict)
+        self.proposal_generator = LLMProposalGenerator()
         self.verifier = VerifierAgent()
         self.ranker = RankerAgent()
         self.renderer = RendererAgent(artifacts_dir)
@@ -209,16 +213,32 @@ class GraphBuildOrchestrator:
             if not retrieval_output.candidate_nodes:
                 self.warnings.append("检索阶段未找到候选节点，图谱可能为空")
 
-            decomposer_output = self._run_stage(
-                BuildStage.DECOMPOSER, "运行DecomposerAgent组装子图",
-                lambda: self.decomposer.run(self._to_dict(retrieval_output)),
-                lambda out: (f"DecomposerAgent完成: 组装{len(out.subgraph.nodes) if out and out.subgraph else 0}个节点, "
-                             f"{len(out.subgraph.edges) if out and out.subgraph else 0}条边"),
-                lambda out: {
-                    "node_count": len(out.subgraph.nodes) if out and out.subgraph else 0,
-                    "edge_count": len(out.subgraph.edges) if out and out.subgraph else 0
-                }
-            )
+            # Fix 4: strict模式使用VerifiedGraphAssembler，其他模式使用DecomposerAgent
+            if self.strict or self.no_llm:
+                decomposer_output = self._run_stage(
+                    BuildStage.DECOMPOSER, "运行VerifiedGraphAssembler组装子图",
+                    lambda: self._run_assembler(retrieval_output, planner_output),
+                    lambda out: (f"Assembler完成: 组装{len(out.subgraph.nodes) if out and out.subgraph else 0}个节点, "
+                                 f"{len(out.subgraph.edges) if out and out.subgraph else 0}条边"),
+                    lambda out: {
+                        "node_count": len(out.subgraph.nodes) if out and out.subgraph else 0,
+                        "edge_count": len(out.subgraph.edges) if out and out.subgraph else 0
+                    }
+                )
+                # 在strict模式下保存proposals
+                if self.allow_proposals:
+                    self.proposal_generator.save_proposals(str(self.artifacts_dir))
+            else:
+                decomposer_output = self._run_stage(
+                    BuildStage.DECOMPOSER, "运行DecomposerAgent组装子图",
+                    lambda: self.decomposer.run(self._to_dict(retrieval_output)),
+                    lambda out: (f"DecomposerAgent完成: 组装{len(out.subgraph.nodes) if out and out.subgraph else 0}个节点, "
+                                 f"{len(out.subgraph.edges) if out and out.subgraph else 0}条边"),
+                    lambda out: {
+                        "node_count": len(out.subgraph.nodes) if out and out.subgraph else 0,
+                        "edge_count": len(out.subgraph.edges) if out and out.subgraph else 0
+                    }
+                )
 
             verification_output = self._run_stage(
                 BuildStage.VERIFICATION, "运行VerifierAgent验证图谱",
@@ -312,6 +332,17 @@ class GraphBuildOrchestrator:
             {**details_fn(result), "duration": self.timing[stage.value]}
         )
         return result
+
+    def _run_assembler(self, retrieval_output, planner_output):
+        """Fix 4: 使用VerifiedGraphAssembler替代DecomposerAgent"""
+        from .agents.decomposer_agent import DecomposerOutput
+        result = self.assembler.run(retrieval_output, self._to_dict(planner_output))
+        return DecomposerOutput(
+            subgraph=result.subgraph,
+            assembly_evidence={"used_nodes": len(result.used_node_ids), "used_edges": len(result.used_edge_ids)},
+            assumptions_added=[],
+            derivation_steps_added=0,
+        )
 
     def _build_planner_input(self, router_output: RouterOutput) -> Dict[str, Any]:
         d = self._to_dict(router_output)

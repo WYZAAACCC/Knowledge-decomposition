@@ -1,63 +1,84 @@
 """
 假设验证器
 
-验证所有derives_from边是否都带assumptions，
-assumption是否存在于注册表，是否命中学科域必查checklist。
+Fix 6: 从"非空检查"升级为"注册表检查"。
 """
-
-from typing import Dict, List, Tuple, Optional, Any
+import json
+from pathlib import Path
+from typing import Dict, List, Tuple, Optional, Any, Set
 from ..models import Node, Edge, KnowledgeGraph
 from ..physics.assumption_checklists import get_assumption_checklists
-from ..physics.quantity_registry import get_quantity_registry
 
 
 class AssumptionValidator:
-    """假设验证器"""
+    """Fix 6: 假设验证器 — 检查注册表"""
 
     def __init__(self):
-        """初始化"""
         self.checklists = get_assumption_checklists()
-        self.registry = get_quantity_registry()
+        self._registry: Optional[Dict[str, dict]] = None
+        self._registry_ids: Optional[Set[str]] = None
+
+    @property
+    def registry(self) -> Dict[str, dict]:
+        """Fix 6: 加载 assumption registry"""
+        if self._registry is None:
+            self._registry = {}
+            self._registry_ids = set()
+            registry_path = Path(__file__).parent.parent.parent / "data" / "ontology" / "assumptions.json"
+            try:
+                if registry_path.exists():
+                    with open(registry_path, encoding='utf-8') as f:
+                        data = json.load(f)
+                    for item in data:
+                        aid = item.get("id", "")
+                        if aid:
+                            self._registry[aid] = item
+                            self._registry_ids.add(aid)
+            except Exception:
+                pass
+        return self._registry
+
+    @property
+    def registry_ids(self) -> Set[str]:
+        if self._registry_ids is None:
+            _ = self.registry  # trigger load
+        return self._registry_ids or set()
 
     def validate_edge_assumptions(self, edge: Edge) -> Tuple[bool, List[str]]:
-        """
-        验证单条边的假设
-
-        Args:
-            edge: 边对象
-
-        Returns:
-            (是否有效, 错误信息列表)
-        """
+        """Fix 6: 验证边假设（检查注册表）"""
         errors = []
 
-        # 1. 对于derives_from边，必须包含假设
-        if edge.type == "derives_from":
-            if not edge.assumptions or len(edge.assumptions) == 0:
-                errors.append(f"derives_from边 {edge.id} 必须包含至少一个假设")
+        # 检查 derives/derives_from 边必须有假设
+        if edge.type.value in {"derives", "derives_from"}:
+            has_free_text = edge.assumptions and len(edge.assumptions) > 0
+            has_registry = getattr(edge, 'assumption_ids', None) and len(edge.assumption_ids) > 0
+            if not has_free_text and not has_registry:
+                errors.append(f"{edge.type.value}边 {edge.id} 必须包含assumptions或assumption_ids")
                 return False, errors
 
-            # 2. 检查每个假设的格式
+        # Fix 6: 检查 assumption_ids 是否在注册表中
+        assumption_ids = getattr(edge, 'assumption_ids', []) or []
+        for aid in assumption_ids:
+            if aid not in self.registry_ids:
+                errors.append(f"边 {edge.id}: assumption_id '{aid}' 不在注册表中")
+            else:
+                entry = self.registry.get(aid, {})
+                # 检查 domain 兼容性
+                applies_to = entry.get("applies_to_edge_types", [])
+                if edge.type.value not in applies_to:
+                    errors.append(
+                        f"边 {edge.id}: assumption '{aid}' "
+                        f"不适用于 {edge.type.value} 类型边"
+                        f"（适用于: {applies_to}）"
+                    )
+
+        # 检查自由文本假设（应逐步淘汰，用assumption_ids替代）
+        if edge.assumptions:
             for i, assumption in enumerate(edge.assumptions):
                 if not isinstance(assumption, str) or not assumption.strip():
                     errors.append(f"边 {edge.id} 的第{i+1}个假设无效: {assumption}")
-
-        # 3. 检查假设是否在注册表中（如果有注册表的话）
-        # 这里假设assumption_checklists中会定义有效的假设ID
-        # 我们可以检查假设是否在相关学科的检查清单中
-        if edge.assumptions:
-            # 推断学科域（从边连接的节点或主题）
-            domain = self._infer_domain_from_edge(edge)
-            if domain:
-                domain_assumptions = self.checklists.get_domain_assumptions(domain)
-                extra_assumptions = []
-                for assumption in edge.assumptions:
-                    if assumption not in domain_assumptions:
-                        extra_assumptions.append(assumption)
-
-                if extra_assumptions:
-                    # 警告而不是错误，因为可能有自定义假设
-                    pass  # 暂时不处理警告
+                # 检查domain相关的checklist
+                domain = self._infer_domain_from_edge(edge)
 
         return len(errors) == 0, errors
 
