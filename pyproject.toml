@@ -1,0 +1,61 @@
+[project]
+name = "physics-graph-demo"
+version = "0.1.0"
+description = "大学物理知识图谱系统"
+authors = [
+    {name = "Physics Graph Team", email = "demo@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "openai>=1.0.0",
+    "pydantic>=2.0.0",
+    "jsonschema>=4.0.0",
+    "networkx>=3.0",
+    "sympy>=1.12",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "jinja2>=3.1.0",
+    "pytest>=8.0.0",
+    "rich>=13.0.0",
+    "typer>=0.9.0",
+    "orjson>=3.9.0",
+    "python-multipart>=0.0.6",
+    "streamlit>=1.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+    "pytest-cov>=4.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

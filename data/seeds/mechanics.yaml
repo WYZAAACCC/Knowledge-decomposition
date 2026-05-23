@@ -1,0 +1,538 @@
+domain: mechanics
+edges:
+- assumptions:
+  - inertial_frame
+  - point_mass
+  from: law.newton_second
+  id: edge.newton_second.requires.force
+  path_id: path.newton_second.basic
+  to: concept.force
+  type: requires
+- assumptions:
+  - constant_mass
+  from: law.newton_second
+  id: edge.newton_second.requires.mass
+  path_id: path.newton_second.basic
+  to: concept.mass
+  type: requires
+- assumptions:
+  - inertial_frame
+  from: law.newton_second
+  id: edge.newton_second.requires.acceleration
+  path_id: path.newton_second.basic
+  to: concept.acceleration
+  type: requires
+- assumptions:
+  - inertial_frame
+  - point_mass
+  - constant_mass
+  derivation_steps:
+  - 力的操作定义：力是使物体产生加速度的原因
+  - 通过实验确定力与加速度的线性关系
+  - 比例系数定义为质量
+  - 得到 F = ma
+  from: law.newton_second
+  id: edge.newton_second.derives_from.definition_force
+  math_used:
+  - linear_proportionality
+  path_id: path.newton_second.canonical
+  to: definition.force
+  type: derives_from
+- assumptions:
+  - constant_mass
+  - one_dimensional_motion
+  derivation_steps:
+  - 从牛顿第二定律 F = ma 出发
+  - 将加速度表示为 a = dv/dt
+  - 功的定义 W = ∫ F dx
+  - 代入并积分：W = ∫ m (dv/dt) dx
+  - 利用 dx = v dt 变换
+  - 得到 W = ∫ m v dv
+  - 积分得到 W = ½m(v₂² - v₁²)
+  - 即 W = ΔK
+  from: eq.work_energy_theorem
+  id: edge.work_energy_theorem.derives_from.newton_second
+  math_used:
+  - integral
+  - chain_rule
+  path_id: path.work_energy.canonical
+  to: law.newton_second
+  type: derives_from
+- assumptions: []
+  from: eq.work_energy_theorem
+  id: edge.work_energy_theorem.requires.kinetic_energy
+  path_id: path.work_energy.canonical
+  to: concept.kinetic_energy
+  type: requires
+- assumptions:
+  - steady_flow
+  - incompressible
+  - inviscid
+  - along_streamline
+  derivation_steps:
+  - 从质量守恒出发
+  - 对于不可压缩流体，体积流量守恒
+  - 得到连续性方程 A₁v₁ = A₂v₂
+  from: eq.bernoulli
+  id: edge.bernoulli.derives_from.continuity
+  math_used:
+  - conservation_of_mass
+  path_id: path.bernoulli.canonical
+  to: eq.continuity
+  type: derives_from
+- assumptions: []
+  from: eq.bernoulli
+  id: edge.bernoulli.requires.assumption_steady_flow
+  path_id: path.bernoulli.canonical
+  to: assumption.steady_flow
+  type: requires
+- assumptions: []
+  from: eq.bernoulli
+  id: edge.bernoulli.requires.assumption_incompressible
+  path_id: path.bernoulli.canonical
+  to: assumption.incompressible
+  type: requires
+- assumptions: []
+  from: eq.bernoulli
+  id: edge.bernoulli.requires.assumption_inviscid
+  path_id: path.bernoulli.canonical
+  to: assumption.inviscid
+  type: requires
+- assumptions: []
+  from: eq.bernoulli
+  id: edge.bernoulli.requires.assumption_along_streamline
+  path_id: path.bernoulli.canonical
+  to: assumption.along_streamline
+  type: requires
+- assumptions: []
+  from: eq.bernoulli
+  id: edge.bernoulli.uses_math.line_integral
+  path_id: path.bernoulli.canonical
+  to: math.line_integral
+  type: uses_math
+- assumptions:
+  - steady_flow
+  - incompressible
+  - horizontal_flow
+  derivation_steps:
+  - 在管道收缩处，根据连续性方程，流速增加
+  - 根据伯努利方程，流速增加处压强降低
+  - 测量收缩前后的压差
+  - 通过伯努利方程计算流速
+  from: application.venturi_meter
+  id: edge.venturi_meter.applies_to.bernoulli
+  path_id: path.venturi.application
+  to: eq.bernoulli
+  type: applies_to
+- assumptions:
+  - steady_flow
+  - incompressible
+  - stagnation_point
+  derivation_steps:
+  - 皮托管前端为驻点，流速为零
+  - 根据伯努利方程，驻点处动压转化为静压
+  - 测量总压和静压的差值
+  - 通过伯努利方程计算流速
+  from: application.pitot_tube
+  id: edge.pitot_tube.applies_to.bernoulli
+  path_id: path.pitot.application
+  to: eq.bernoulli
+  type: applies_to
+nodes:
+- abstraction_level: 0
+  aliases:
+  - displacement
+  - 位移矢量
+  domain: mechanics
+  id: concept.displacement
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 物体位置的变化量，是矢量
+  status: canonical
+  theory_context: classical
+  title: 位移
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - velocity
+  - 速度矢量
+  domain: mechanics
+  formula_latex: \vec{v} = \frac{d\vec{r}}{dt}
+  id: concept.velocity
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 位移随时间的变化率，是矢量
+  status: canonical
+  theory_context: classical
+  title: 速度
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - acceleration
+  - 加速度矢量
+  domain: mechanics
+  formula_latex: \vec{a} = \frac{d\vec{v}}{dt}
+  id: concept.acceleration
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 速度随时间的变化率，是矢量
+  status: canonical
+  theory_context: classical
+  title: 加速度
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - force
+  - 力矢量
+  domain: mechanics
+  id: concept.force
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 使物体产生加速度的原因，是矢量
+  status: canonical
+  theory_context: classical
+  title: 力
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - mass
+  - 惯性质量
+  dimension:
+    base_dimensions: M
+    symbol: m
+    unit: kg
+  domain: mechanics
+  id: concept.mass
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 物体惯性大小的量度
+  status: canonical
+  theory_context: classical
+  title: 质量
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - momentum
+  - 动量矢量
+  dimension:
+    base_dimensions: M L T^-1
+    symbol: p
+    unit: kg·m/s
+  domain: mechanics
+  formula_latex: \vec{p} = m\vec{v}
+  id: concept.momentum
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 质量与速度的乘积，是矢量
+  status: canonical
+  theory_context: classical
+  title: 动量
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - kinetic energy
+  - 运动能量
+  domain: mechanics
+  formula_latex: K = \frac{1}{2}mv^2
+  id: concept.kinetic_energy
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 物体由于运动而具有的能量
+  status: canonical
+  theory_context: classical
+  title: 动能
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - potential energy
+  - 位能
+  domain: mechanics
+  id: concept.potential_energy
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 物体由于位置或配置而具有的能量
+  status: canonical
+  theory_context: classical
+  title: 势能
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - definition of force
+  domain: mechanics
+  id: definition.force
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 力是使物体产生加速度的原因，F=ma是操作定义
+  status: canonical
+  theory_context: classical
+  title: 力的定义
+  type: definition
+- abstraction_level: 1
+  aliases:
+  - Newton's first law
+  - 惯性定律
+  domain: mechanics
+  id: law.newton_first
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 物体在不受外力作用时，保持静止或匀速直线运动状态
+  status: canonical
+  theory_context: classical
+  title: 牛顿第一定律
+  type: law
+  validity:
+    frame: inertial
+    notes:
+    - 适用于惯性参考系
+- abstraction_level: 1
+  aliases:
+  - Newton's second law
+  - F=ma
+  domain: mechanics
+  formula_latex: \sum \vec{F} = m\vec{a}
+  id: law.newton_second
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 合外力等于质量乘加速度
+  status: canonical
+  theory_context: classical
+  title: 牛顿第二定律
+  type: law
+  validity:
+    frame: inertial
+    notes:
+    - 适用于经典力学范围内的质点或质心运动建模
+- abstraction_level: 1
+  aliases:
+  - Newton's third law
+  - 作用力与反作用力定律
+  domain: mechanics
+  id: law.newton_third
+  pedagogical_level: 1
+  sources:
+  - seed.mechanics.v1
+  statement: 作用力与反作用力大小相等、方向相反、作用在同一直线上
+  status: canonical
+  theory_context: classical
+  title: 牛顿第三定律
+  type: law
+- abstraction_level: 1
+  aliases:
+  - conservation of momentum
+  - 动量守恒
+  domain: mechanics
+  id: law.conservation_momentum
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 系统不受外力或合外力为零时，总动量保持不变
+  status: canonical
+  theory_context: classical
+  title: 动量守恒定律
+  type: law
+  validity:
+    notes:
+    - 适用于封闭系统
+- abstraction_level: 1
+  aliases:
+  - conservation of mechanical energy
+  - 机械能守恒
+  domain: mechanics
+  id: law.conservation_energy_mechanical
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 只有保守力做功时，系统的机械能保持不变
+  status: canonical
+  theory_context: classical
+  title: 机械能守恒定律
+  type: law
+  validity:
+    notes:
+    - 适用于保守力系统，无耗散
+- abstraction_level: 2
+  aliases:
+  - work-energy theorem
+  - 功-能定理
+  domain: mechanics
+  formula_latex: W_{\text{total}} = \Delta K
+  id: eq.work_energy_theorem
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 合外力对物体做的功等于物体动能的变化
+  status: canonical
+  theory_context: classical
+  title: 动能定理
+  type: equation
+- abstraction_level: 2
+  aliases:
+  - simple harmonic motion equation
+  - SHM equation
+  domain: mechanics
+  formula_latex: m\frac{d^2x}{dt^2} = -kx
+  id: eq.simple_harmonic_motion
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 回复力与位移成正比且方向相反的振动
+  status: canonical
+  theory_context: classical
+  title: 简谐振动方程
+  type: equation
+- abstraction_level: 2
+  aliases:
+  - Bernoulli equation
+  - 伯努利原理
+  dimension:
+    base_dimensions: M L^-1 T^-2
+    symbol: p + ½ρv² + ρgh
+    unit: Pa
+  domain: mechanics
+  formula_latex: p + \frac{1}{2}\rho v^2 + \rho gh = \text{constant}
+  id: eq.bernoulli
+  pedagogical_level: 3
+  sources:
+  - seed.mechanics.v1
+  statement: 理想流体稳定流动中，沿流线的压强能、位能和动能之和守恒
+  status: canonical
+  theory_context: classical
+  title: 伯努利方程
+  type: equation
+- abstraction_level: 2
+  aliases:
+  - continuity equation
+  - 连续方程
+  dimension:
+    base_dimensions: L^3 T^-1
+    symbol: Q
+    unit: m^3/s
+  domain: mechanics
+  formula_latex: A_1v_1 = A_2v_2
+  id: eq.continuity
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 不可压缩流体通过管道的质量流量守恒
+  status: canonical
+  theory_context: classical
+  title: 连续性方程
+  type: equation
+- abstraction_level: 0
+  aliases:
+  - inertial frame assumption
+  domain: mechanics
+  id: assumption.inertial_frame
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 牛顿定律成立的参考系
+  status: canonical
+  theory_context: classical
+  title: 惯性参考系假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - point mass assumption
+  domain: mechanics
+  id: assumption.point_mass
+  pedagogical_level: 2
+  sources:
+  - seed.mechanics.v1
+  statement: 物体的大小和形状可以忽略，质量集中在一点
+  status: canonical
+  theory_context: classical
+  title: 质点假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - steady flow assumption
+  domain: mechanics
+  id: assumption.steady_flow
+  pedagogical_level: 3
+  sources:
+  - seed.mechanics.v1
+  statement: 流场中任一点的物理量不随时间变化
+  status: canonical
+  theory_context: classical
+  title: 稳态流动假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - incompressible fluid assumption
+  domain: mechanics
+  id: assumption.incompressible
+  pedagogical_level: 3
+  sources:
+  - seed.mechanics.v1
+  statement: 流体密度不随压强变化
+  status: canonical
+  theory_context: classical
+  title: 不可压缩假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - inviscid fluid assumption
+  domain: mechanics
+  id: assumption.inviscid
+  pedagogical_level: 3
+  sources:
+  - seed.mechanics.v1
+  statement: 流体没有黏性，内部无摩擦
+  status: canonical
+  theory_context: classical
+  title: 无黏性假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - along a streamline assumption
+  domain: mechanics
+  id: assumption.along_streamline
+  pedagogical_level: 3
+  sources:
+  - seed.mechanics.v1
+  statement: 伯努利方程只适用于同一条流线
+  status: canonical
+  theory_context: classical
+  title: 沿流线假设
+  type: assumption
+- abstraction_level: 3
+  aliases:
+  - Venturi meter
+  - 文丘里管
+  domain: mechanics
+  id: application.venturi_meter
+  pedagogical_level: 3
+  sources:
+  - seed.mechanics.v1
+  statement: 利用伯努利方程测量管道中流体流速的装置
+  status: canonical
+  theory_context: classical
+  title: 文丘里流量计
+  type: application
+- abstraction_level: 3
+  aliases:
+  - Pitot tube
+  - 皮氏管
+  domain: mechanics
+  id: application.pitot_tube
+  pedagogical_level: 3
+  sources:
+  - seed.mechanics.v1
+  statement: 测量流体流速的装置，基于伯努利方程
+  status: canonical
+  theory_context: classical
+  title: 皮托管
+  type: application
+version: 1.0.0

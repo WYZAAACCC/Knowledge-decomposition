@@ -1,0 +1,53 @@
+# 构建配置
+defaults:
+  expand_down: 2
+  expand_up: 1
+  max_nodes: 25
+  include_alternates: false
+  require_validation: true
+  temperature: 0.0
+
+# 各学科域特定配置
+domains:
+  mechanics:
+    expand_down: 3
+    expand_up: 2
+    max_nodes: 30
+  thermodynamics:
+    expand_down: 2
+    expand_up: 1
+    max_nodes: 25
+  electromagnetism:
+    expand_down: 3
+    expand_up: 2
+    max_nodes: 35
+  optics:
+    expand_down: 2
+    expand_up: 1
+    max_nodes: 20
+  modern_physics:
+    expand_down: 2
+    expand_up: 1
+    max_nodes: 25
+  math_tools:
+    expand_down: 1
+    expand_up: 3
+    max_nodes: 20
+
+# 验证配置
+validation:
+  require_schema: true
+  require_dag: true
+  require_assumptions: true
+  require_dimensions: true
+  require_canonical_path: true
+  allow_warnings: true
+
+# 渲染配置
+rendering:
+  default_layout: "cose"
+  node_size: 30
+  edge_width: 2
+  show_assumptions: true
+  show_math_tools: true
+  collapse_alternates: true

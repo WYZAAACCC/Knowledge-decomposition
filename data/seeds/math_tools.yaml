@@ -1,0 +1,225 @@
+domain: math_tools
+edges:
+- assumptions:
+  - function_continuous
+  - limit_exists
+  from: math.derivative
+  id: edge.derivative.requires.limit
+  path_id: path.default.requires
+  to: concept.limit
+  type: requires
+- assumptions:
+  - riemann_sum_converges
+  from: math.integral
+  id: edge.integral.requires.limit
+  path_id: path.default.requires
+  to: concept.limit
+  type: requires
+- assumptions:
+  - function_continuous
+  derivation_steps:
+  - 微积分基本定理连接导数和积分
+  from: math.integral
+  id: edge.integral.related_to.derivative
+  path_id: path.default.related_to
+  to: math.derivative
+  type: related_to
+- assumptions:
+  - zero_direction
+  - magnitude_only
+  from: concept.scalar
+  id: edge.vector.related_to.scalar
+  path_id: path.default.special_case_of
+  to: concept.vector
+  type: related_to
+- assumptions:
+  - function_differentiable
+  from: math.differential_equation
+  id: edge.differential_equation.uses_math.derivative
+  path_id: path.default.uses_math
+  to: math.derivative
+  type: uses_math
+- assumptions:
+  - curve_parameterizable
+  - field_continuous
+  from: math.line_integral
+  id: edge.line_integral.uses_math.integral
+  path_id: path.default.uses_math
+  to: math.integral
+  type: uses_math
+nodes:
+- abstraction_level: 0
+  aliases:
+  - function
+  - 映射
+  domain: math_tools
+  id: concept.function
+  pedagogical_level: 1
+  sources: &id001
+  - seed.math_tools.v1
+  statement: 输入与输出之间的映射关系
+  status: canonical
+  theory_context: classical
+  title: 函数
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - limit
+  - 极限值
+  domain: math_tools
+  id: concept.limit
+  pedagogical_level: 2
+  sources: *id001
+  statement: 函数在某一点或无穷远处的趋近值
+  status: canonical
+  theory_context: classical
+  title: 极限
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - derivative
+  - 微商
+  domain: math_tools
+  formula_latex: \frac{df}{dx} = \lim_{h\to 0}\frac{f(x+h)-f(x)}{h}
+  id: concept.derivative
+  pedagogical_level: 2
+  sources: *id001
+  statement: 函数在某一点的变化率
+  status: canonical
+  theory_context: classical
+  title: 导数
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - integral
+  - 定积分
+  domain: math_tools
+  formula_latex: \int_a^b f(x) dx = F(b) - F(a)
+  id: concept.integral
+  pedagogical_level: 2
+  sources: *id001
+  statement: 函数曲线下的面积或反导数
+  status: canonical
+  theory_context: classical
+  title: 积分
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - vector
+  - 矢量
+  domain: math_tools
+  id: concept.vector
+  pedagogical_level: 1
+  sources: *id001
+  statement: 具有大小和方向的量
+  status: canonical
+  theory_context: classical
+  title: 向量
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - scalar
+  - 无向量
+  domain: math_tools
+  id: concept.scalar
+  pedagogical_level: 1
+  sources: *id001
+  statement: 只有大小没有方向的量
+  status: canonical
+  theory_context: classical
+  title: 标量
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - differentiation
+  - 求导
+  domain: math_tools
+  id: math.derivative
+  pedagogical_level: 2
+  sources: *id001
+  statement: 计算函数变化率的数学工具
+  status: canonical
+  theory_context: classical
+  title: 导数运算
+  type: math_tool
+- abstraction_level: 0
+  aliases:
+  - integration
+  - 积分法
+  domain: math_tools
+  id: math.integral
+  pedagogical_level: 2
+  sources: *id001
+  statement: 计算面积、体积或反导数的数学工具
+  status: canonical
+  theory_context: classical
+  title: 积分运算
+  type: math_tool
+- abstraction_level: 0
+  aliases:
+  - vector algebra
+  - 矢量运算
+  domain: math_tools
+  id: math.vector
+  pedagogical_level: 2
+  sources: *id001
+  statement: 处理向量的数学工具，包括加减、点积、叉积
+  status: canonical
+  theory_context: classical
+  title: 向量代数
+  type: math_tool
+- abstraction_level: 0
+  aliases:
+  - complex number
+  - 虚数
+  domain: math_tools
+  formula_latex: z = a + bi
+  id: math.complex_number
+  pedagogical_level: 2
+  sources: *id001
+  statement: 实部和虚部组成的数，用于表示振荡和相位
+  status: canonical
+  theory_context: classical
+  title: 复数
+  type: math_tool
+- abstraction_level: 0
+  aliases:
+  - differential equation
+  - 微分方程式
+  domain: math_tools
+  id: math.differential_equation
+  pedagogical_level: 3
+  sources: *id001
+  statement: 包含未知函数及其导数的方程
+  status: canonical
+  theory_context: classical
+  title: 微分方程
+  type: math_tool
+- abstraction_level: 0
+  aliases:
+  - line integral
+  - 路径积分
+  domain: math_tools
+  formula_latex: \int_C \vec{F} \cdot d\vec{r}
+  id: math.line_integral
+  pedagogical_level: 3
+  sources: *id001
+  statement: 沿曲线对函数或向量场进行积分
+  status: canonical
+  theory_context: classical
+  title: 线积分
+  type: math_tool
+- abstraction_level: 0
+  aliases:
+  - trigonometric functions
+  - 三角関数
+  domain: math_tools
+  id: math.trigonometric_function
+  pedagogical_level: 1
+  sources: *id001
+  statement: 正弦、余弦、正切等周期函数
+  status: canonical
+  theory_context: classical
+  title: 三角函数
+  type: math_tool
+version: 1.0.0

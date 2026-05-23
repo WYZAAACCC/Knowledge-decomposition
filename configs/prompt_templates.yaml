@@ -1,0 +1,135 @@
+# Prompt模板配置
+
+# 系统提示模板（所有Agent共用）
+system_template: |
+  你是一个受约束的物理知识图构建器。
+  你只能根据输入候选节点和候选边做结构化组装。
+  你不得发明未在候选集中出现的基础定律。
+  你必须显式输出assumptions。
+  如果信息不足，返回missing_requirements，而不是猜测。
+  输出必须是严格JSON。
+
+# RouterAgent提示
+router:
+  system: "{system_template}"
+  user: |
+    请将用户输入的主题标准化为内部主题ID。
+
+    输入:
+    {{
+      "topic_text": "{topic_text}"
+    }}
+
+    输出要求:
+    - normalized_topic: 标准化的主题ID（如"eq.bernoulli"）
+    - domain: 所属学科域（mechanics/thermodynamics/electromagnetism/optics/modern_physics/math_tools）
+    - node_type: 节点类型（concept/quantity/definition/law/equation/model/assumption/math_tool/application/experiment）
+    - confidence: 置信度（0.0-1.0）
+
+    如果无法确定，请返回:
+    {{
+      "normalized_topic": null,
+      "domain": null,
+      "node_type": null,
+      "confidence": 0.0,
+      "suggestions": ["建议列表"]
+    }}
+
+# PlannerAgent提示
+planner:
+  system: "{system_template}"
+  user: |
+    请为目标主题制定构图计划。
+
+    输入:
+    {{
+      "target": "{target}",
+      "domain": "{domain}",
+      "node_type": "{node_type}"
+    }}
+
+    输出要求:
+    - target: 目标主题ID
+    - expand_down: 向下展开层数（1-4）
+    - expand_up: 向上展开层数（0-3）
+    - max_nodes: 最大节点数（10-50）
+    - include_alternates: 是否包含备用路径（true/false）
+    - require_validation: 是否需要验证（true/false）
+
+    请根据学科域和目标类型推荐合适的参数。
+
+# DecomposerAgent提示
+decomposer:
+  system: "{system_template}"
+  user: |
+    请将候选知识组装成局部子图。
+
+    任务:
+    {{
+      "task": "build_local_subgraph",
+      "target": "{target}",
+      "candidate_nodes": {candidate_nodes},
+      "candidate_edges": {candidate_edges},
+      "requirements": {{
+        "expand_down": {expand_down},
+        "expand_up": {expand_up},
+        "max_nodes": {max_nodes},
+        "must_include_assumptions": true,
+        "must_return_json": true
+      }}
+    }}
+
+    输出要求:
+    - nodes: 节点列表（必须全部来自candidate_nodes或为assumption/math_tool类型）
+    - edges: 边列表（必须包含derivation_steps和assumptions）
+    - candidate_paths: 候选路径列表
+    - missing_requirements: 如果信息不足，列出缺少的内容
+
+    注意:
+    1. 任何derives_from边必须包含assumptions数组（至少1项）
+    2. 任何推导必须有derivation_steps数组（至少3步）
+    3. 不得发明candidate_nodes中不存在的基础定律节点
+
+# RankerAgent提示
+ranker:
+  system: "{system_template}"
+  user: |
+    请从多条路径中选择最佳canonical path。
+
+    输入:
+    {{
+      "target": "{target}",
+      "candidate_paths": {candidate_paths},
+      "validation_results": {validation_results}
+    }}
+
+    评分维度:
+    1. pedagogy_score (0-1): 教学上的清晰度和常见度
+    2. validation_score (0-1): 验证通过率
+    3. simplicity_score (0-1): 数学复杂度
+    4. source_confidence (0-1): 来源可信度
+
+    输出要求:
+    - canonical_path: 主路径ID
+    - alternate_paths: 备用路径ID列表
+    - scores: 各路径评分详情
+    - rationale: 选择理由
+
+# 错误处理提示
+error_handler:
+  system: "{system_template}"
+  user: |
+    请分析构建失败原因并提供修复建议。
+
+    输入:
+    {{
+      "topic": "{topic}",
+      "failed_stage": "{failed_stage}",
+      "errors": {errors},
+      "warnings": {warnings}
+    }}
+
+    输出要求:
+    - root_cause: 根本原因分析
+    - suggested_actions: 具体修复步骤列表
+    - priority: 优先级（high/medium/low）

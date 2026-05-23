@@ -1,0 +1,110 @@
+# 电磁学领域规则
+domain: electromagnetism
+
+# 默认假设检查清单
+assumption_checklists:
+  law.gauss_electric:
+    - closed_surface
+    - electric_field_well_defined
+    - superposition_holds
+
+  law.gauss_magnetic:
+    - closed_surface
+    - no_magnetic_monopoles
+
+  law.ampere:
+    - steady_currents
+    - magnetostatics
+    - closed_loop
+
+  law.faraday:
+    - changing_magnetic_flux
+    - conductive_loop
+    - emf_definition
+
+  law.coulomb:
+    - point_charges
+    - vacuum_or_free_space
+    - stationary_charges
+
+  law.ohm:
+    - linear_material
+    - constant_temperature
+    - homogeneous_conductor
+
+  law.lorentz_force:
+    - point_charge
+    - known_e_and_b_fields
+    - non_relativistic_speeds
+
+# 量纲注册表扩展
+quantity_extensions:
+  electric_charge:
+    symbol: "q"
+    dimension: "I T"
+    unit: "C"
+    domain: electromagnetism
+
+  electric_field:
+    symbol: "E"
+    dimension: "M L T^-3 I^-1"
+    unit: "N/C or V/m"
+    domain: electromagnetism
+
+  magnetic_field:
+    symbol: "B"
+    dimension: "M T^-2 I^-1"
+    unit: "T"
+    domain: electromagnetism
+
+  electric_potential:
+    symbol: "V"
+    dimension: "M L^2 T^-3 I^-1"
+    unit: "V"
+    domain: electromagnetism
+
+  capacitance:
+    symbol: "C"
+    dimension: "M^-1 L^-2 T^4 I^2"
+    unit: "F"
+    domain: electromagnetism
+
+  resistance:
+    symbol: "R"
+    dimension: "M L^2 T^-3 I^-2"
+    unit: "Ω"
+    domain: electromagnetism
+
+  electric_current:
+    symbol: "I"
+    dimension: "I"
+    unit: "A"
+    domain: electromagnetism
+
+# 规范路径建议
+canonical_paths:
+  law.gauss_electric:
+    path: ["concept.electric_flux", "concept.closed_surface", "law.coulomb", "principle.superposition"]
+    rationale: "从库仑定律和叠加原理推导电通量与电荷关系"
+
+  law.faraday:
+    path: ["concept.magnetic_flux", "law.lenz", "experiment.faraday_coil", "definition.emf"]
+    rationale: "基于实验观测和楞次定律"
+
+  maxwell_equations:
+    path: ["law.gauss_electric", "law.gauss_magnetic", "law.ampere", "law.faraday", "concept.displacement_current"]
+    rationale: "麦克斯韦方程组由四个定律组成，加上位移电流修正"
+
+# 警告规则
+warnings:
+  law.ohm:
+    - "非线性材料（如半导体）不满足欧姆定律"
+    - "高温或强场下可能偏离线性关系"
+
+  law.ampere:
+    - "非稳态电流需要位移电流修正"
+    - "仅适用于静磁学情况"
+
+  law.coulomb:
+    - "运动电荷需要考虑相对论效应"
+    - "介质中需要修正"

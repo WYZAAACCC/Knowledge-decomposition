@@ -1,0 +1,217 @@
+{
+  "$schema": "http://json-schema.org/draft-2020-12/schema",
+  "$id": "https://physics-graph-demo/schemas/build_report.schema.json",
+  "title": "构建报告",
+  "description": "知识图谱构建过程报告",
+  "type": "object",
+  "required": ["topic", "status", "failed_stage", "errors", "warnings", "graph_hash", "timing", "validator_results", "suggested_actions"],
+  "properties": {
+    "topic": {
+      "type": "string",
+      "description": "主题ID",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "status": {
+      "type": "string",
+      "description": "构建状态",
+      "enum": ["success", "failed", "partial_success"]
+    },
+    "failed_stage": {
+      "type": "string",
+      "description": "失败阶段（如果status为failed）",
+      "enum": ["router", "planner", "retriever", "decomposer", "verifier", "ranker", "renderer", "unknown"]
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "target", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "错误代码",
+            "pattern": "^[A-Z_]+$"
+          },
+          "target": {
+            "type": "string",
+            "description": "错误目标"
+          },
+          "message": {
+            "type": "string",
+            "description": "错误信息"
+          },
+          "stage": {
+            "type": "string",
+            "description": "错误发生的阶段"
+          }
+        }
+      },
+      "description": "错误列表"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "警告代码"
+          },
+          "message": {
+            "type": "string",
+            "description": "警告信息"
+          },
+          "target": {
+            "type": "string",
+            "description": "警告目标"
+          }
+        }
+      },
+      "description": "警告列表"
+    },
+    "graph_hash": {
+      "type": "string",
+      "description": "图谱哈希值（用于确定性检查）",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timing": {
+      "type": "object",
+      "description": "计时信息",
+      "required": ["total_seconds", "stage_timings"],
+      "properties": {
+        "total_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "stage_timings": {
+          "type": "object",
+          "description": "各阶段耗时",
+          "properties": {
+            "router": {
+              "type": "number",
+              "minimum": 0
+            },
+            "planner": {
+              "type": "number",
+              "minimum": 0
+            },
+            "retriever": {
+              "type": "number",
+              "minimum": 0
+            },
+            "decomposer": {
+              "type": "number",
+              "minimum": 0
+            },
+            "verifier": {
+              "type": "number",
+              "minimum": 0
+            },
+            "ranker": {
+              "type": "number",
+              "minimum": 0
+            },
+            "renderer": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "validator_results": {
+      "type": "object",
+      "description": "验证器结果",
+      "properties": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "graph": {
+          "type": "object",
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "object",
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "dimensions": {
+          "type": "object",
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "duplicates": {
+          "type": "object",
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "suggested_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "建议的修复动作",
+      "minItems": 0
+    },
+    "next_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "建议的下一步",
+      "minItems": 0
+    }
+  },
+  "additionalProperties": false
+}

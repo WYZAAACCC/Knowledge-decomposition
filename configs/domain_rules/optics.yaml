@@ -1,0 +1,99 @@
+# 光学领域规则
+domain: optics
+
+# 默认假设检查清单
+assumption_checklists:
+  law.reflection:
+    - smooth_surface
+    - wavelength_less_than_surface_roughness
+    - specular_reflection
+
+  law.refraction:
+    - isotropic_medium
+    - monochromatic_light
+    - planar_interface
+    - snells_law_applies
+
+  eq.thin_lens:
+    - paraxial_approximation
+    - thin_lens
+    - geometric_optics
+    - spherical_surfaces
+
+  phenomenon.interference:
+    - coherent_sources
+    - monochromatic_light
+    - superposition_principle
+    - stable_interference_pattern
+
+  phenomenon.diffraction:
+    - wave_nature_of_light
+    - huygens_fresnel_principle
+    - far_field_fraunhofer_or_near_field_fresnel
+
+  phenomenon.polarization:
+    - transverse_wave
+    - vector_nature_of_light
+    - polarization_filter
+
+# 量纲注册表扩展
+quantity_extensions:
+  wavelength:
+    symbol: "λ"
+    dimension: "L"
+    unit: "m"
+    domain: optics
+
+  frequency:
+    symbol: "f"
+    dimension: "T^-1"
+    unit: "Hz"
+    domain: optics
+
+  refractive_index:
+    symbol: "n"
+    dimension: "1"
+    unit: "1"
+    domain: optics
+
+  focal_length:
+    symbol: "f"
+    dimension: "L"
+    unit: "m"
+    domain: optics
+
+  intensity:
+    symbol: "I"
+    dimension: "M T^-3"
+    unit: "W/m^2"
+    domain: optics
+
+# 规范路径建议
+canonical_paths:
+  eq.thin_lens:
+    path: ["law.refraction", "assumption.paraxial_approximation", "assumption.thin_lens", "model.geometric_optics", "concept.focal_point"]
+    rationale: "从折射定律在傍轴近似和薄透镜假设下推导"
+
+  phenomenon.youngs_double_slit:
+    path: ["phenomenon.interference", "assumption.coherent_sources", "assumption.monochromatic_light", "concept.path_difference", "concept.phase_difference"]
+    rationale: "基于干涉原理和光程差计算"
+
+  law.refraction:
+    path: ["principle.fermat", "concept.refractive_index", "concept.wavefront", "model.wave_optics"]
+    rationale: "从费马原理或波动光学推导"
+
+# 警告规则
+warnings:
+  eq.thin_lens:
+    - "厚透镜或大角度需要修正"
+    - "非球面透镜不适用标准公式"
+    - "色差现象需要考虑"
+
+  law.refraction:
+    - "全反射临界角以上发生全反射"
+    - "各向异性材料（如晶体）需要修正"
+    - "强光可能引起非线性效应"
+
+  phenomenon.interference:
+    - "非单色光导致干涉条纹对比度下降"
+    - "非相干光源不产生稳定干涉图样"

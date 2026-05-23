@@ -1,0 +1,112 @@
+# 近代物理领域规则
+domain: modern_physics
+
+# 默认假设检查清单
+assumption_checklists:
+  relativity.time_dilation:
+    - inertial_frames
+    - constant_relative_velocity
+    - speed_of_light_constant
+    - special_relativity
+
+  phenomenon.photoelectric_effect:
+    - quantized_light
+    - work_function_material
+    - electron_binding_energy
+    - particle_nature_of_light
+
+  relation.de_broglie:
+    - wave_particle_duality
+    - matter_waves
+    - non_relativistic_speeds
+
+  model.bohr_atom:
+    - stationary_states
+    - quantized_angular_momentum
+    - classical_electrodynamics_limited
+    - hydrogen_atom_specific
+
+  principle.uncertainty:
+    - wave_packet_description
+    - fourier_transform_relation
+    - quantum_measurement
+
+  phenomenon.nuclear_decay:
+    - exponential_decay_law
+    - large_number_of_nuclei
+    - statistical_process
+
+# 量纲注册表扩展
+quantity_extensions:
+  planck_constant:
+    symbol: "h"
+    dimension: "M L^2 T^-1"
+    unit: "J·s"
+    domain: modern_physics
+
+  rest_energy:
+    symbol: "E0"
+    dimension: "M L^2 T^-2"
+    unit: "J"
+    domain: modern_physics
+
+  lorentz_factor:
+    symbol: "γ"
+    dimension: "1"
+    unit: "1"
+    domain: modern_physics
+
+  work_function:
+    symbol: "Φ"
+    dimension: "M L^2 T^-2"
+    unit: "J"
+    domain: modern_physics
+
+  de_broglie_wavelength:
+    symbol: "λ_db"
+    dimension: "L"
+    unit: "m"
+    domain: modern_physics
+
+  energy_level:
+    symbol: "E_n"
+    dimension: "M L^2 T^-2"
+    unit: "J"
+    domain: modern_physics
+
+# 规范路径建议
+canonical_paths:
+  relativity.time_dilation:
+    path: ["postulate.speed_of_light_constant", "postulate.relativity_principle", "thought_experiment.light_clock", "concept.lorentz_factor"]
+    rationale: "从光速不变原理和相对性原理推导"
+
+  phenomenon.photoelectric_effect:
+    path: ["concept.photon", "concept.work_function", "experiment.photoelectric", "law.conservation_energy", "relation.einstein_photoelectric"]
+    rationale: "基于光子概念和能量守恒"
+
+  relation.de_broglie:
+    path: ["principle.wave_particle_duality", "relation.einstein_energy", "relation.compton", "analogy.light_matter"]
+    rationale: "通过光与物质的类比提出"
+
+  model.bohr_atom:
+    path: ["postulate.stationary_states", "postulate.quantized_angular_momentum", "condition.balmer_series", "classical.centripetal_force", "coulomb.law"]
+    rationale: "结合经典力学和量子化条件"
+
+# 警告规则
+warnings:
+  relativity.time_dilation:
+    - "仅适用于惯性参考系"
+    - "广义相对论中引力场需要额外考虑"
+
+  model.bohr_atom:
+    - "仅精确适用于氢原子"
+    - "无法解释精细结构和超精细结构"
+    - "无法处理多电子原子复杂情况"
+
+  relation.de_broglie:
+    - "相对论情况需要修正"
+    - "波函数需要量子力学完整描述"
+
+  principle.uncertainty:
+    - "不是测量精度限制，而是基本物理限制"
+    - "不同物理量对易关系决定具体形式"

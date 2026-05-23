@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-2020-12/schema",
+  "$id": "https://physics-graph-demo/schemas/edge.schema.json",
+  "title": "知识图谱边",
+  "description": "物理知识图谱边定义",
+  "type": "object",
+  "required": ["id", "type", "from", "to", "path_id"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "边唯一标识符",
+      "pattern": "^edge\\.[a-z0-9_]+\\.(derives_from|requires|uses_math|assumes|equivalent_to|special_case_of|approximation_of|applies_to|motivated_by|related_to)\\.[a-z0-9_]+$",
+      "examples": ["edge.bernoulli.from_euler", "edge.newton_second.requires.force"]
+    },
+    "type": {
+      "type": "string",
+      "description": "边类型",
+      "enum": ["derives_from", "requires", "uses_math", "assumes", "equivalent_to", "special_case_of", "approximation_of", "applies_to", "motivated_by", "related_to"]
+    },
+    "from": {
+      "type": "string",
+      "description": "源节点ID",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "to": {
+      "type": "string",
+      "description": "目标节点ID",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "path_id": {
+      "type": "string",
+      "description": "所属路径ID",
+      "pattern": "^path\\.[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "假设列表",
+      "minItems": 0
+    },
+    "derivation_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "推导步骤",
+      "minItems": 0
+    },
+    "math_used": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "使用的数学工具",
+      "minItems": 0
+    },
+    "approximation_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "近似标签",
+      "minItems": 0
+    },
+    "verified": {
+      "type": "object",
+      "description": "验证状态",
+      "properties": {
+        "schema": {
+          "type": "boolean",
+          "description": "schema验证通过"
+        },
+        "unit": {
+          "type": "boolean",
+          "description": "单位验证通过"
+        },
+        "symbolic": {
+          "type": "boolean",
+          "description": "符号验证通过"
+        }
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "description": "置信度",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "failure_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "失效条件",
+      "minItems": 0
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "type": {
+        "const": "derives_from"
+      }
+    }
+  },
+  "then": {
+    "required": ["assumptions", "derivation_steps"],
+    "properties": {
+      "assumptions": {
+        "minItems": 1
+      },
+      "derivation_steps": {
+        "minItems": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# 构建契约配置
+build_contract:
+  project_name: physics_graph_demo
+  required_outputs:
+    - artifacts/latest/graph.json
+    - artifacts/latest/report.md
+    - artifacts/latest/debug.json
+    - artifacts/latest/eval_report.json
+  hard_gates:
+    - schema_pass
+    - dag_pass
+    - assumptions_complete
+    - canonical_path_exists
+  soft_gates:
+    - prerequisite_recall_gte_0_80
+    - assumption_coverage_gte_0_90
+    - determinism_pass_rate_gte_0_90

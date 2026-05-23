@@ -1,0 +1,394 @@
+domain: thermodynamics
+edges:
+- assumptions:
+  - closed_system
+  from: law.first_law_thermodynamics
+  id: edge.first_law.requires.internal_energy
+  path_id: path.first_law.canonical
+  to: concept.internal_energy
+  type: requires
+- assumptions: []
+  from: law.first_law_thermodynamics
+  id: edge.first_law.requires.heat
+  path_id: path.first_law.canonical
+  to: concept.heat
+  type: requires
+- assumptions:
+  - quasi_static_process
+  from: law.first_law_thermodynamics
+  id: edge.first_law.requires.work
+  path_id: path.first_law.canonical
+  to: concept.work
+  type: requires
+- assumptions: []
+  derivation_steps:
+  - 焦耳通过桨轮实验将机械功转化为热
+  - 测量得到热功当量
+  - 建立热量与功的等价关系
+  - 结合能量守恒原理
+  from: law.first_law_thermodynamics
+  id: edge.first_law.motivated_by.joule_experiment
+  path_id: path.first_law.canonical
+  to: experiment.joule_paddle_wheel
+  type: motivated_by
+- assumptions:
+  - low_density
+  - no_intermolecular_forces
+  - elastic_collisions
+  - point_particles
+  derivation_steps:
+  - 从分子动理论基本假设出发
+  - 计算分子对器壁的碰撞频率
+  - 计算单个分子对器壁的冲量
+  - 对所有分子求平均
+  - 得到压强与分子平均动能的关系
+  - 利用温度与平均动能的关系 T ∝ ⟨½mv²⟩
+  - 结合阿伏伽德罗定律得到 pV = nRT
+  from: eq.ideal_gas
+  id: edge.ideal_gas.derives_from.kinetic_theory
+  math_used:
+  - statistical_average
+  - kinetic_theory_calculation
+  path_id: path.ideal_gas.canonical
+  to: model.kinetic_theory
+  type: derives_from
+- assumptions: []
+  from: eq.ideal_gas
+  id: edge.ideal_gas.requires.assumption_low_density
+  path_id: path.ideal_gas.canonical
+  to: assumption.low_density
+  type: requires
+- assumptions: []
+  from: eq.ideal_gas
+  id: edge.ideal_gas.requires.assumption_no_intermolecular_forces
+  path_id: path.ideal_gas.canonical
+  to: assumption.no_intermolecular_forces
+  type: requires
+- assumptions: []
+  from: eq.ideal_gas
+  id: edge.ideal_gas.requires.assumption_elastic_collisions
+  path_id: path.ideal_gas.canonical
+  to: assumption.elastic_collisions
+  type: requires
+- assumptions:
+  - isolated_system
+  from: law.second_law_thermodynamics
+  id: edge.second_law.requires.entropy
+  path_id: path.second_law.canonical
+  to: concept.entropy
+  type: requires
+- assumptions:
+  - reversible_process
+  derivation_steps:
+  - 克劳修斯定义：对于可逆过程，dS = δQ_rev/T
+  - 熵变等于可逆过程中吸收的热量与温度的比值
+  from: concept.entropy
+  id: edge.entropy.related_to.heat
+  path_id: path.entropy.definition
+  to: concept.heat
+  type: related_to
+nodes:
+- abstraction_level: 0
+  aliases:
+  - temperature
+  - 热力学温度
+  domain: thermodynamics
+  id: concept.temperature
+  pedagogical_level: 1
+  sources:
+  - seed.thermodynamics.v1
+  statement: 物体冷热程度的量度，微观上是分子平均动能的量度
+  status: canonical
+  theory_context: classical
+  title: 温度
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - pressure
+  - 压力强度
+  dimension:
+    base_dimensions: M L^-1 T^-2
+    symbol: p
+    unit: Pa
+  domain: thermodynamics
+  formula_latex: p = \frac{F}{A}
+  id: concept.pressure
+  pedagogical_level: 1
+  sources:
+  - seed.thermodynamics.v1
+  statement: 单位面积上受到的正压力
+  status: canonical
+  theory_context: classical
+  title: 压强
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - volume
+  - 容积
+  dimension:
+    base_dimensions: L^3
+    symbol: V
+    unit: m^3
+  domain: thermodynamics
+  id: concept.volume
+  pedagogical_level: 1
+  sources:
+  - seed.thermodynamics.v1
+  statement: 物体所占空间的大小
+  status: canonical
+  theory_context: classical
+  title: 体积
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - internal energy
+  - 热力学能
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: U
+    unit: J
+  domain: thermodynamics
+  id: concept.internal_energy
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 系统内部分子热运动的动能和分子间势能的总和
+  status: canonical
+  theory_context: classical
+  title: 内能
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - heat
+  - 热能传递
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: Q
+    unit: J
+  domain: thermodynamics
+  id: concept.heat
+  pedagogical_level: 1
+  sources:
+  - seed.thermodynamics.v1
+  statement: 由于温度差而传递的能量
+  status: canonical
+  theory_context: classical
+  title: 热量
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - work
+  - 机械功
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: W
+    unit: J
+  domain: thermodynamics
+  id: concept.work
+  pedagogical_level: 1
+  sources:
+  - seed.thermodynamics.v1
+  statement: 能量传递的一种方式，力与位移的点积
+  status: canonical
+  theory_context: classical
+  title: 功
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - entropy
+  - 热力学熵
+  dimension:
+    base_dimensions: M L^2 T^-2 Θ^-1
+    symbol: S
+    unit: J/K
+  domain: thermodynamics
+  id: concept.entropy
+  pedagogical_level: 3
+  sources:
+  - seed.thermodynamics.v1
+  statement: 系统无序程度的量度，或热力学概率的量度
+  status: canonical
+  theory_context: classical
+  title: 熵
+  type: concept
+- abstraction_level: 1
+  aliases:
+  - kinetic theory of gases
+  - 气体动理论
+  domain: thermodynamics
+  id: model.kinetic_theory
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 从分子运动的角度解释热现象的理论
+  status: canonical
+  theory_context: classical
+  title: 分子动理论
+  type: model
+- abstraction_level: 1
+  aliases:
+  - ideal gas model
+  - 完美气体模型
+  domain: thermodynamics
+  id: model.ideal_gas
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 忽略分子大小和相互作用的简化气体模型
+  status: canonical
+  theory_context: classical
+  title: 理想气体模型
+  type: model
+- abstraction_level: 1
+  aliases:
+  - first law of thermodynamics
+  - 能量守恒定律（热学）
+  domain: thermodynamics
+  formula_latex: \Delta U = Q + W
+  id: law.first_law_thermodynamics
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 系统内能的增量等于传入系统的热量与外界对系统做功之和
+  status: canonical
+  theory_context: classical
+  title: 热力学第一定律
+  type: law
+- abstraction_level: 1
+  aliases:
+  - second law of thermodynamics
+  - 熵增定律
+  domain: thermodynamics
+  id: law.second_law_thermodynamics
+  pedagogical_level: 3
+  sources:
+  - seed.thermodynamics.v1
+  statement: 孤立系统的熵永不减少；热量不能自发从低温物体传到高温物体
+  status: canonical
+  theory_context: classical
+  title: 热力学第二定律
+  type: law
+- abstraction_level: 2
+  aliases:
+  - ideal gas law
+  - 克拉珀龙方程
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: pV
+    unit: J
+  domain: thermodynamics
+  formula_latex: pV = nRT
+  id: eq.ideal_gas
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 描述理想气体状态参量之间关系的方程
+  status: canonical
+  theory_context: classical
+  title: 理想气体状态方程
+  type: equation
+- abstraction_level: 0
+  aliases:
+  - closed system assumption
+  domain: thermodynamics
+  id: assumption.closed_system
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 系统与外界没有物质交换
+  status: canonical
+  theory_context: classical
+  title: 封闭系统假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - isolated system assumption
+  domain: thermodynamics
+  id: assumption.isolated_system
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 系统与外界没有能量和物质交换
+  status: canonical
+  theory_context: classical
+  title: 孤立系统假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - quasi-static process assumption
+  domain: thermodynamics
+  id: assumption.quasi_static_process
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 过程进行得足够缓慢，每一时刻系统都处于平衡态
+  status: canonical
+  theory_context: classical
+  title: 准静态过程假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - reversible process assumption
+  domain: thermodynamics
+  id: assumption.reversible_process
+  pedagogical_level: 3
+  sources:
+  - seed.thermodynamics.v1
+  statement: 无摩擦、无耗散的准静态过程
+  status: canonical
+  theory_context: classical
+  title: 可逆过程假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - low density assumption
+  domain: thermodynamics
+  id: assumption.low_density
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 气体分子间平均距离远大于分子大小
+  status: canonical
+  theory_context: classical
+  title: 低密度假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - no intermolecular forces assumption
+  domain: thermodynamics
+  id: assumption.no_intermolecular_forces
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 除碰撞外分子间无相互作用
+  status: canonical
+  theory_context: classical
+  title: 无分子间作用力假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - elastic collisions assumption
+  domain: thermodynamics
+  id: assumption.elastic_collisions
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 分子与器壁的碰撞是完全弹性的
+  status: canonical
+  theory_context: classical
+  title: 弹性碰撞假设
+  type: assumption
+- abstraction_level: 3
+  aliases:
+  - Joule's paddle wheel experiment
+  domain: thermodynamics
+  id: experiment.joule_paddle_wheel
+  pedagogical_level: 2
+  sources:
+  - seed.thermodynamics.v1
+  statement: 证明热是能量的一种形式，确立热功当量
+  status: canonical
+  theory_context: classical
+  title: 焦耳桨轮实验
+  type: experiment
+version: 1.0.0

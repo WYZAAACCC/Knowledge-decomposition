@@ -1,0 +1,76 @@
+# Schema版本配置
+current_version: "1.0.0"
+supported_versions:
+  - "1.0.0"
+
+# 节点类型枚举
+node_types:
+  - concept
+  - quantity
+  - definition
+  - law
+  - equation
+  - model
+  - assumption
+  - math_tool
+  - application
+  - experiment
+  - warning
+  - intuition_card
+
+# 边类型枚举
+edge_types:
+  - derives_from
+  - requires
+  - uses_math
+  - assumes
+  - equivalent_to
+  - special_case_of
+  - approximation_of
+  - applies_to
+  - motivated_by
+  - related_to
+
+# 学科域枚举
+domains:
+  - mechanics
+  - thermodynamics
+  - electromagnetism
+  - optics
+  - modern_physics
+  - math_tools
+
+# 理论上下文枚举
+theory_contexts:
+  - classical
+  - relativistic
+  - quantum_intro
+  - quantum_advanced
+  - statistical
+  - phenomenological
+
+# 状态枚举
+status_values:
+  - canonical
+  - alternate
+  - deprecated
+  - experimental
+
+# 抽象级别
+abstraction_levels:
+  min: 0
+  max: 3
+  descriptions:
+    0: "最基础节点（定义、公理、守恒、数学工具）"
+    1: "核心定律层"
+    2: "推导结果层"
+    3: "应用与实验层"
+
+# 教学级别
+pedagogical_levels:
+  min: 1
+  max: 3
+  descriptions:
+    1: "入门级"
+    2: "中级"
+    3: "高级"

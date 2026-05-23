@@ -1,0 +1,174 @@
+# 主题别名映射
+aliases:
+  # 力学
+  eq.bernoulli:
+    - "伯努利方程"
+    - "Bernoulli equation"
+    - "Bernoulli's principle"
+    - "伯努利原理"
+
+  law.newton_first:
+    - "牛顿第一定律"
+    - "Newton's first law"
+    - "惯性定律"
+    - "law of inertia"
+
+  law.newton_second:
+    - "牛顿第二定律"
+    - "Newton's second law"
+    - "F=ma"
+    - "运动定律"
+
+  law.newton_third:
+    - "牛顿第三定律"
+    - "Newton's third law"
+    - "作用力与反作用力"
+    - "action-reaction"
+
+  law.conservation_energy_mechanical:
+    - "机械能守恒定律"
+    - "conservation of mechanical energy"
+    - "机械能守恒"
+
+  law.conservation_momentum:
+    - "动量守恒定律"
+    - "conservation of momentum"
+    - "动量守恒"
+
+  law.conservation_angular_momentum:
+    - "角动量守恒定律"
+    - "conservation of angular momentum"
+    - "角动量守恒"
+
+  eq.simple_harmonic_motion:
+    - "简谐振动方程"
+    - "simple harmonic motion"
+    - "SHM"
+    - "简谐运动"
+
+  # 热学
+  law.first_law_thermodynamics:
+    - "热力学第一定律"
+    - "first law of thermodynamics"
+    - "能量守恒定律（热学）"
+
+  law.second_law_thermodynamics:
+    - "热力学第二定律"
+    - "second law of thermodynamics"
+    - "熵增定律"
+
+  eq.ideal_gas:
+    - "理想气体状态方程"
+    - "ideal gas law"
+    - "PV=nRT"
+    - "克拉珀龙方程"
+
+  concept.entropy:
+    - "熵"
+    - "entropy"
+    - "热力学熵"
+
+  # 电磁学
+  law.gauss_electric:
+    - "高斯定律（电场）"
+    - "Gauss's law for electricity"
+    - "高斯电通定律"
+
+  law.gauss_magnetic:
+    - "高斯定律（磁场）"
+    - "Gauss's law for magnetism"
+    - "磁通连续性"
+
+  law.ampere:
+    - "安培环路定律"
+    - "Ampère's circuital law"
+    - "安培定律"
+
+  law.faraday:
+    - "法拉第电磁感应定律"
+    - "Faraday's law of induction"
+    - "电磁感应定律"
+
+  law.coulomb:
+    - "库仑定律"
+    - "Coulomb's law"
+    - "静电作用定律"
+
+  law.ohm:
+    - "欧姆定律"
+    - "Ohm's law"
+    - "V=IR"
+
+  law.lorentz_force:
+    - "洛伦兹力公式"
+    - "Lorentz force"
+    - "电磁力公式"
+
+  # 光学
+  law.reflection:
+    - "反射定律"
+    - "law of reflection"
+    - "反射角等于入射角"
+
+  law.refraction:
+    - "折射定律"
+    - "law of refraction"
+    - "斯涅尔定律"
+    - "Snell's law"
+
+  eq.thin_lens:
+    - "薄透镜公式"
+    - "thin lens equation"
+    - "透镜成像公式"
+
+  phenomenon.youngs_double_slit:
+    - "杨氏双缝干涉"
+    - "Young's double-slit experiment"
+    - "双缝干涉"
+
+  # 近代物理
+  relativity.time_dilation:
+    - "时间延缓"
+    - "time dilation"
+    - "相对论时间膨胀"
+
+  phenomenon.photoelectric_effect:
+    - "光电效应"
+    - "photoelectric effect"
+    - "爱因斯坦光电效应"
+
+  relation.de_broglie:
+    - "德布罗意关系"
+    - "de Broglie relation"
+    - "物质波公式"
+
+  model.bohr_atom:
+    - "玻尔原子模型"
+    - "Bohr model of the atom"
+    - "玻尔模型"
+
+  # 数学工具
+  math.derivative:
+    - "导数"
+    - "derivative"
+    - "微商"
+
+  math.integral:
+    - "积分"
+    - "integral"
+    - "定积分"
+
+  math.vector:
+    - "向量"
+    - "vector"
+    - "矢量"
+
+  math.complex_number:
+    - "复数"
+    - "complex number"
+    - "虚数"
+
+  math.differential_equation:
+    - "微分方程"
+    - "differential equation"
+    - "常微分方程"

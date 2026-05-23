@@ -1,0 +1,97 @@
+# 热学/热力学领域规则
+domain: thermodynamics
+
+# 默认假设检查清单
+assumption_checklists:
+  law.first_law_thermodynamics:
+    - closed_system_or_control_volume
+    - energy_conservation
+    - state_function_internal_energy
+
+  law.second_law_thermodynamics:
+    - irreversible_processes
+    - entropy_definition
+
+  eq.ideal_gas:
+    - low_density
+    - no_intermolecular_forces
+    - point_particles
+    - elastic_collisions
+
+  concept.entropy:
+    - equilibrium_state
+    - statistical_interpretation_available
+
+  process.isothermal:
+    - constant_temperature
+    - slow_process
+    - thermal_equilibrium
+
+  process.adiabatic:
+    - no_heat_exchange
+    - fast_process
+    - quasi_static_approximation
+
+# 量纲注册表扩展
+quantity_extensions:
+  temperature:
+    symbol: "T"
+    dimension: "Θ"
+    unit: "K"
+    domain: thermodynamics
+
+  heat:
+    symbol: "Q"
+    dimension: "M L^2 T^-2"
+    unit: "J"
+    domain: thermodynamics
+
+  work:
+    symbol: "W"
+    dimension: "M L^2 T^-2"
+    unit: "J"
+    domain: thermodynamics
+
+  internal_energy:
+    symbol: "U"
+    dimension: "M L^2 T^-2"
+    unit: "J"
+    domain: thermodynamics
+
+  entropy:
+    symbol: "S"
+    dimension: "M L^2 T^-2 Θ^-1"
+    unit: "J/K"
+    domain: thermodynamics
+
+  pressure:
+    symbol: "p"
+    dimension: "M L^-1 T^-2"
+    unit: "Pa"
+    domain: thermodynamics
+
+  volume:
+    symbol: "V"
+    dimension: "L^3"
+    unit: "m^3"
+    domain: thermodynamics
+
+# 规范路径建议
+canonical_paths:
+  law.first_law_thermodynamics:
+    path: ["concept.internal_energy", "concept.heat", "concept.work", "experiment.joule_paddle_wheel", "law.conservation_energy"]
+    rationale: "基于内能定义和能量守恒原理"
+
+  eq.ideal_gas:
+    path: ["model.kinetic_theory", "assumption.low_density", "assumption.no_intermolecular_forces", "assumption.elastic_collisions", "concept.pressure", "concept.temperature", "concept.volume"]
+    rationale: "从分子动理论的基本假设推导"
+
+# 警告规则
+warnings:
+  eq.ideal_gas:
+    - "高压或低温下真实气体偏离理想气体行为"
+    - "需要考虑分子间作用力和分子体积"
+
+  law.second_law_thermodynamics:
+    - "统计解释适用于宏观系统"
+    - "涨落现象在小系统中显著"

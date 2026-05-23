@@ -1,0 +1,258 @@
+topics:
+  # 力学
+  - id: concept.velocity
+    zh: 速度
+    domain: mechanics
+    prerequisites:
+      - concept.displacement
+      - concept.time
+      - math.derivative
+
+  - id: concept.acceleration
+    zh: 加速度
+    domain: mechanics
+    prerequisites:
+      - concept.velocity
+      - math.derivative
+
+  - id: law.newton_second
+    zh: 牛顿第二定律
+    domain: mechanics
+    prerequisites:
+      - concept.force
+      - concept.mass
+      - concept.acceleration
+      - definition.force
+
+  - id: law.conservation_energy_mechanical
+    zh: 机械能守恒定律
+    domain: mechanics
+    prerequisites:
+      - concept.kinetic_energy
+      - concept.potential_energy
+      - law.work_energy_theorem
+      - assumption.conservative_forces
+
+  - id: law.conservation_momentum
+    zh: 动量守恒定律
+    domain: mechanics
+    prerequisites:
+      - concept.momentum
+      - law.newton_third
+      - assumption.no_external_forces
+
+  - id: eq.simple_harmonic_motion
+    zh: 简谐振动方程
+    domain: mechanics
+    prerequisites:
+      - law.newton_second
+      - concept.linear_restoring_force
+      - math.differential_equation
+      - math.trigonometric_function
+
+  - id: eq.bernoulli
+    zh: 伯努利方程
+    domain: mechanics
+    prerequisites:
+      - law.mass_conservation
+      - eq.continuity
+      - eq.euler_streamline
+      - assumption.steady_flow
+      - assumption.incompressible
+      - assumption.inviscid
+      - assumption.along_streamline
+    applications:
+      - application.venturi_meter
+      - application.pitot_tube
+
+  # 热学
+  - id: eq.ideal_gas
+    zh: 理想气体状态方程
+    domain: thermodynamics
+    prerequisites:
+      - concept.pressure
+      - concept.volume
+      - concept.temperature
+      - model.kinetic_theory
+      - assumption.low_density
+
+  - id: law.first_law_thermodynamics
+    zh: 热力学第一定律
+    domain: thermodynamics
+    prerequisites:
+      - concept.internal_energy
+      - concept.heat
+      - concept.work
+      - law.conservation_energy
+
+  - id: concept.entropy
+    zh: 熵
+    domain: thermodynamics
+    prerequisites:
+      - concept.reversible_process
+      - concept.heat_transfer
+      - law.second_law_thermodynamics
+
+  - id: law.second_law_thermodynamics
+    zh: 热力学第二定律
+    domain: thermodynamics
+    prerequisites:
+      - concept.entropy
+      - concept.irreversible_process
+      - principle.carnot_efficiency
+
+  # 电磁学
+  - id: law.coulomb
+    zh: 库仑定律
+    domain: electromagnetism
+    prerequisites:
+      - concept.electric_charge
+      - concept.distance
+      - principle.superposition
+
+  - id: law.gauss_electric
+    zh: 高斯定律
+    domain: electromagnetism
+    prerequisites:
+      - concept.electric_flux
+      - concept.closed_surface
+      - law.coulomb
+
+  - id: concept.electric_potential
+    zh: 电势
+    domain: electromagnetism
+    prerequisites:
+      - concept.electric_field
+      - concept.work
+      - math.line_integral
+
+  - id: law.ampere
+    zh: 安培环路定律
+    domain: electromagnetism
+    prerequisites:
+      - concept.magnetic_field
+      - concept.electric_current
+      - concept.closed_loop
+      - assumption.steady_currents
+
+  - id: law.faraday
+    zh: 法拉第电磁感应定律
+    domain: electromagnetism
+    prerequisites:
+      - concept.magnetic_flux
+      - concept.changing_flux
+      - law.lenz
+      - definition.emf
+
+  - id: law.ohm
+    zh: 欧姆定律
+    domain: electromagnetism
+    prerequisites:
+      - concept.electric_current
+      - concept.voltage
+      - concept.resistance
+      - assumption.linear_material
+
+  # 光学
+  - id: law.reflection
+    zh: 反射定律
+    domain: optics
+    prerequisites:
+      - concept.light_ray
+      - concept.smooth_surface
+      - principle.fermat
+
+  - id: law.refraction
+    zh: 折射定律
+    domain: optics
+    prerequisites:
+      - concept.refractive_index
+      - concept.wavefront
+      - principle.fermat
+      - model.wave_optics
+
+  - id: eq.thin_lens
+    zh: 薄透镜公式
+    domain: optics
+    prerequisites:
+      - law.refraction
+      - assumption.paraxial_approximation
+      - model.geometric_optics
+      - concept.focal_length
+
+  - id: phenomenon.youngs_double_slit
+    zh: 杨氏双缝干涉
+    domain: optics
+    prerequisites:
+      - phenomenon.interference
+      - assumption.coherent_sources
+      - concept.path_difference
+      - concept.wavelength
+
+  # 近代物理
+  - id: relativity.time_dilation
+    zh: 时间延缓
+    domain: modern_physics
+    prerequisites:
+      - postulate.speed_of_light_constant
+      - postulate.relativity_principle
+      - thought_experiment.light_clock
+
+  - id: phenomenon.photoelectric_effect
+    zh: 光电效应
+    domain: modern_physics
+    prerequisites:
+      - concept.photon
+      - concept.work_function
+      - law.conservation_energy
+      - experiment.photoelectric
+
+  - id: relation.de_broglie
+    zh: 德布罗意关系
+    domain: modern_physics
+    prerequisites:
+      - principle.wave_particle_duality
+      - relation.einstein_energy
+      - analogy.light_matter
+
+  - id: model.bohr_atom
+    zh: 玻尔原子模型
+    domain: modern_physics
+    prerequisites:
+      - postulate.stationary_states
+      - postulate.quantized_angular_momentum
+      - classical.centripetal_force
+      - coulomb.law
+
+  # 数学工具
+  - id: math.derivative
+    zh: 导数
+    domain: math_tools
+    prerequisites:
+      - concept.limit
+      - concept.function
+      - concept.rate_of_change
+
+  - id: math.integral
+    zh: 积分
+    domain: math_tools
+    prerequisites:
+      - concept.area_under_curve
+      - concept.limit_of_sum
+      - math.derivative
+
+  - id: math.vector
+    zh: 向量
+    domain: math_tools
+    prerequisites:
+      - concept.magnitude
+      - concept.direction
+      - operation.vector_addition
+
+  - id: math.differential_equation
+    zh: 微分方程
+    domain: math_tools
+    prerequisites:
+      - math.derivative
+      - concept.function
+      - concept.initial_condition

@@ -1,0 +1,378 @@
+domain: optics
+edges:
+- assumptions:
+  - isotropic_medium
+  - planar_interface
+  derivation_steps:
+  - 根据费马原理，光线传播时间最短
+  - 计算光从一点经界面到另一点的时间
+  - 时间 t = (路径1)/v₁ + (路径2)/v₂
+  - 利用折射率 n = c/v
+  - 对路径变分求极值
+  - 得到斯涅尔定律 n₁sinθ₁ = n₂sinθ₂
+  from: law.refraction
+  id: edge.refraction.derives_from.fermat
+  math_used:
+  - calculus_of_variations
+  path_id: path.refraction.canonical
+  to: principle.fermat
+  type: derives_from
+- assumptions: []
+  from: law.refraction
+  id: edge.refraction.requires.refractive_index
+  path_id: path.refraction.canonical
+  to: concept.refractive_index
+  type: requires
+- assumptions:
+  - paraxial_approximation
+  - thin_lens
+  - spherical_surfaces
+  derivation_steps:
+  - 从折射定律出发
+  - 考虑透镜前后两个球面的折射
+  - 应用傍轴近似 sinθ ≈ θ
+  - 推导单个球面的成像公式
+  - 将两个球面的公式组合
+  - 得到薄透镜公式 1/f = 1/d_o + 1/d_i
+  from: eq.thin_lens
+  id: edge.thin_lens.derives_from.refraction
+  math_used:
+  - ray_tracing
+  - paraxial_approximation
+  path_id: path.thin_lens.canonical
+  to: law.refraction
+  type: derives_from
+- assumptions: []
+  from: eq.thin_lens
+  id: edge.thin_lens.requires.paraxial_approximation
+  path_id: path.thin_lens.canonical
+  to: assumption.paraxial_approximation
+  type: assumes
+- assumptions: []
+  from: eq.thin_lens
+  id: edge.thin_lens.requires.thin_lens
+  path_id: path.thin_lens.canonical
+  to: assumption.thin_lens
+  type: assumes
+- assumptions: []
+  from: eq.thin_lens
+  id: edge.thin_lens.requires.geometric_optics
+  path_id: path.thin_lens.canonical
+  to: model.geometric_optics
+  type: requires
+- assumptions:
+  - coherent_sources
+  - monochromatic_light
+  derivation_steps:
+  - 两缝发出相干光
+  - 在屏幕上叠加产生干涉
+  - 光程差决定明暗条纹位置
+  - 得到条纹间距公式
+  from: phenomenon.youngs_double_slit
+  id: edge.youngs_double_slit.special_case_of.interference
+  path_id: path.youngs.canonical
+  to: phenomenon.interference
+  type: special_case_of
+- assumptions: []
+  from: phenomenon.youngs_double_slit
+  id: edge.youngs_double_slit.requires.coherent_sources
+  path_id: path.youngs.canonical
+  to: assumption.coherent_sources
+  type: assumes
+- assumptions: []
+  from: phenomenon.youngs_double_slit
+  id: edge.youngs_double_slit.requires.monochromatic_light
+  path_id: path.youngs.canonical
+  to: assumption.monochromatic_light
+  type: assumes
+- assumptions:
+  - wave_nature_of_light
+  derivation_steps:
+  - 根据惠更斯-菲涅耳原理
+  - 障碍物边缘作为次级子波源
+  - 子波叠加产生衍射图样
+  - 计算不同方向的强度分布
+  from: phenomenon.diffraction
+  id: edge.diffraction.derives_from.huygens_fresnel
+  path_id: path.diffraction.canonical
+  to: principle.huygens_fresnel
+  type: derives_from
+nodes:
+- abstraction_level: 0
+  aliases:
+  - light ray
+  - 几何光线
+  domain: optics
+  id: concept.light_ray
+  pedagogical_level: 1
+  sources:
+  - seed.optics.v1
+  statement: 表示光传播方向的几何线
+  status: canonical
+  theory_context: classical
+  title: 光线
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - wavelength
+  - 光波波长
+  dimension:
+    base_dimensions: L
+    symbol: λ
+    unit: m
+  domain: optics
+  id: concept.wavelength
+  pedagogical_level: 1
+  sources:
+  - seed.optics.v1
+  statement: 波在一个振动周期内传播的距离
+  status: canonical
+  theory_context: classical
+  title: 波长
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - frequency
+  - 振动频率
+  dimension:
+    base_dimensions: T^-1
+    symbol: f
+    unit: Hz
+  domain: optics
+  id: concept.frequency
+  pedagogical_level: 1
+  sources:
+  - seed.optics.v1
+  statement: 单位时间内完成周期性变化的次数
+  status: canonical
+  theory_context: classical
+  title: 频率
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - refractive index
+  - 折射指数
+  domain: optics
+  formula_latex: n = \frac{c}{v}
+  id: concept.refractive_index
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 光在真空中的速度与在介质中的速度之比
+  status: canonical
+  theory_context: classical
+  title: 折射率
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - focal length
+  - 焦点距离
+  dimension:
+    base_dimensions: L
+    symbol: f
+    unit: m
+  domain: optics
+  id: concept.focal_length
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 透镜或反射镜的焦点到主点的距离
+  status: canonical
+  theory_context: classical
+  title: 焦距
+  type: concept
+- abstraction_level: 1
+  aliases:
+  - law of reflection
+  - 反射角等于入射角
+  domain: optics
+  id: law.reflection
+  pedagogical_level: 1
+  sources:
+  - seed.optics.v1
+  statement: 反射角等于入射角，且入射光线、反射光线和法线在同一平面内
+  status: canonical
+  theory_context: classical
+  title: 反射定律
+  type: law
+- abstraction_level: 1
+  aliases:
+  - Snell's law
+  - 斯涅尔定律
+  domain: optics
+  formula_latex: n_1 \sin\theta_1 = n_2 \sin\theta_2
+  id: law.refraction
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 入射角的正弦与折射角的正弦之比等于两种介质的折射率之比
+  status: canonical
+  theory_context: classical
+  title: 折射定律
+  type: law
+- abstraction_level: 2
+  aliases:
+  - thin lens equation
+  - 透镜成像公式
+  domain: optics
+  formula_latex: \frac{1}{f} = \frac{1}{d_o} + \frac{1}{d_i}
+  id: eq.thin_lens
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 描述薄透镜成像物距、像距和焦距关系的公式
+  status: canonical
+  theory_context: classical
+  title: 薄透镜公式
+  type: equation
+- abstraction_level: 1
+  aliases:
+  - interference
+  - 光干涉
+  domain: optics
+  id: phenomenon.interference
+  pedagogical_level: 3
+  sources:
+  - seed.optics.v1
+  statement: 两列或数列波在空间叠加时产生强度重新分布的现象
+  status: canonical
+  theory_context: classical
+  title: 干涉
+  type: concept
+- abstraction_level: 1
+  aliases:
+  - diffraction
+  - 光衍射
+  domain: optics
+  id: phenomenon.diffraction
+  pedagogical_level: 3
+  sources:
+  - seed.optics.v1
+  statement: 波遇到障碍物时偏离直线传播的现象
+  status: canonical
+  theory_context: classical
+  title: 衍射
+  type: concept
+- abstraction_level: 3
+  aliases:
+  - Young's double-slit experiment
+  - 杨氏干涉实验
+  domain: optics
+  id: phenomenon.youngs_double_slit
+  pedagogical_level: 3
+  sources:
+  - seed.optics.v1
+  statement: 证明光的波动性的经典干涉实验
+  status: canonical
+  theory_context: classical
+  title: 杨氏双缝实验
+  type: experiment
+- abstraction_level: 1
+  aliases:
+  - geometric optics
+  - 光线光学
+  domain: optics
+  id: model.geometric_optics
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 用光线表示光的传播，忽略波动性
+  status: canonical
+  theory_context: classical
+  title: 几何光学模型
+  type: model
+- abstraction_level: 1
+  aliases:
+  - wave optics
+  - 波动光学
+  domain: optics
+  id: model.wave_optics
+  pedagogical_level: 3
+  sources:
+  - seed.optics.v1
+  statement: 将光视为电磁波，考虑波动性
+  status: canonical
+  theory_context: classical
+  title: 波动光学模型
+  type: model
+- abstraction_level: 0
+  aliases:
+  - paraxial approximation
+  - 近轴近似
+  domain: optics
+  id: assumption.paraxial_approximation
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 光线与光轴的夹角很小，sinθ ≈ tanθ ≈ θ
+  status: canonical
+  theory_context: classical
+  title: 傍轴近似
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - thin lens assumption
+  domain: optics
+  id: assumption.thin_lens
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 透镜厚度远小于曲率半径和物距、像距
+  status: canonical
+  theory_context: classical
+  title: 薄透镜假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - coherent sources assumption
+  domain: optics
+  id: assumption.coherent_sources
+  pedagogical_level: 3
+  sources:
+  - seed.optics.v1
+  statement: 两光源具有相同的频率和固定的相位差
+  status: canonical
+  theory_context: classical
+  title: 相干光源假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - monochromatic light assumption
+  domain: optics
+  id: assumption.monochromatic_light
+  pedagogical_level: 2
+  sources:
+  - seed.optics.v1
+  statement: 光具有单一波长
+  status: canonical
+  theory_context: classical
+  title: 单色光假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - Fermat's principle
+  - 最短时间原理
+  domain: optics
+  id: principle.fermat
+  pedagogical_level: 3
+  sources:
+  - seed.optics.v1
+  statement: 光线传播的路径是所需时间最短的路径
+  status: canonical
+  theory_context: classical
+  title: 费马原理
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - Huygens-Fresnel principle
+  domain: optics
+  id: principle.huygens_fresnel
+  pedagogical_level: 3
+  sources:
+  - seed.optics.v1
+  statement: 波前上每一点都可以看作发射子波的波源，这些子波的包络面形成新的波前
+  status: canonical
+  theory_context: classical
+  title: 惠更斯-菲涅耳原理
+  type: concept
+version: 1.0.0

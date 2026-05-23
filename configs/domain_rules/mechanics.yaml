@@ -1,0 +1,100 @@
+# 力学领域规则
+domain: mechanics
+
+# 默认假设检查清单
+assumption_checklists:
+  eq.bernoulli:
+    - steady_flow
+    - incompressible
+    - inviscid
+    - along_streamline
+
+  law.newton_first:
+    - inertial_frame
+    - no_net_force
+
+  law.newton_second:
+    - inertial_frame
+    - point_mass_or_center_of_mass
+    - constant_mass
+
+  law.newton_third:
+    - contact_forces_or_field_forces
+    - simultaneous_action
+
+  law.conservation_energy_mechanical:
+    - conservative_forces
+    - no_dissipation
+    - closed_system
+
+  law.conservation_momentum:
+    - no_external_forces
+    - closed_system
+
+  law.conservation_angular_momentum:
+    - no_external_torques
+    - closed_system
+
+  eq.simple_harmonic_motion:
+    - small_oscillations
+    - linear_restoring_force
+    - no_damping
+
+# 量纲注册表扩展
+quantity_extensions:
+  force:
+    symbol: "F"
+    dimension: "M L T^-2"
+    unit: "N"
+    domain: mechanics
+
+  mass:
+    symbol: "m"
+    dimension: "M"
+    unit: "kg"
+    domain: mechanics
+
+  acceleration:
+    symbol: "a"
+    dimension: "L T^-2"
+    unit: "m/s^2"
+    domain: mechanics
+
+  velocity:
+    symbol: "v"
+    dimension: "L T^-1"
+    unit: "m/s"
+    domain: mechanics
+
+  pressure:
+    symbol: "p"
+    dimension: "M L^-1 T^-2"
+    unit: "Pa"
+    domain: mechanics
+
+  density:
+    symbol: "ρ"
+    dimension: "M L^-3"
+    unit: "kg/m^3"
+    domain: mechanics
+
+# 规范路径建议
+canonical_paths:
+  eq.bernoulli:
+    path: ["eq.continuity", "eq.euler_streamline", "assumption.steady_flow", "assumption.incompressible", "assumption.inviscid", "assumption.along_streamline", "math.line_integral"]
+    rationale: "从质量守恒到欧拉方程，在稳态、不可压缩、无黏、沿流线假设下积分得到"
+
+  law.newton_second:
+    path: ["concept.force", "concept.mass", "concept.acceleration", "definition.force", "experiment.galileo_inclined_plane"]
+    rationale: "基于力的定义和实验观测"
+
+# 警告规则
+warnings:
+  eq.bernoulli:
+    - "真实流体具有黏性，伯努利方程只适用于理想流体近似"
+    - "强压缩流中需要修正"
+    - "非稳态流动需要时间项"
+
+  law.newton_second:
+    - "高速相对论情形下需要修正"
+    - "变质量系统需要额外考虑"

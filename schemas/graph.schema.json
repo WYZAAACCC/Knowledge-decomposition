@@ -1,0 +1,364 @@
+{
+  "$schema": "http://json-schema.org/draft-2020-12/schema",
+  "$id": "https://physics-graph-demo/schemas/graph.schema.json",
+  "title": "知识图谱",
+  "description": "完整的物理知识图谱",
+  "type": "object",
+  "required": ["topic", "build_version", "nodes", "edges", "canonical_path", "alternate_paths", "stats", "validation_summary"],
+  "properties": {
+    "topic": {
+      "type": "string",
+      "description": "主题ID",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+    },
+    "build_version": {
+      "type": "string",
+      "description": "构建版本",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/node"
+      },
+      "description": "节点列表",
+      "minItems": 1
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/edge"
+      },
+      "description": "边列表",
+      "minItems": 0
+    },
+    "canonical_path": {
+      "type": "string",
+      "description": "主路径ID",
+      "pattern": "^path\\.[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+    },
+    "alternate_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "备用路径ID列表",
+      "minItems": 0
+    },
+    "stats": {
+      "type": "object",
+      "description": "统计信息",
+      "required": ["node_count", "edge_count", "derivation_edge_count", "assumption_count", "math_tool_count"],
+      "properties": {
+        "node_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "edge_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "derivation_edge_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assumption_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "math_tool_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "prerequisite_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "assumption_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "validation_summary": {
+      "type": "object",
+      "description": "验证摘要",
+      "required": ["schema_valid", "dag_valid", "assumptions_complete", "dimensions_valid", "canonical_path_exists"],
+      "properties": {
+        "schema_valid": {
+          "type": "boolean"
+        },
+        "dag_valid": {
+          "type": "boolean"
+        },
+        "assumptions_complete": {
+          "type": "boolean"
+        },
+        "dimensions_valid": {
+          "type": "boolean"
+        },
+        "canonical_path_exists": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "build_metadata": {
+      "type": "object",
+      "description": "构建元数据",
+      "properties": {
+        "build_timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "build_duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "agent_versions": {
+          "type": "object"
+        },
+        "seed_sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "title", "domain", "abstraction_level", "pedagogical_level", "sources"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "节点唯一标识符",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型",
+          "enum": ["concept", "quantity", "definition", "law", "equation", "model", "assumption", "math_tool", "application", "experiment", "warning", "intuition_card"]
+        },
+        "title": {
+          "type": "string",
+          "description": "节点标题",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "statement": {
+          "type": "string",
+          "description": "陈述或定义",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "formula_latex": {
+          "type": "string",
+          "description": "LaTeX公式表示",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "domain": {
+          "type": "string",
+          "description": "所属学科域",
+          "enum": ["mechanics", "thermodynamics", "electromagnetism", "optics", "modern_physics", "math_tools"]
+        },
+        "abstraction_level": {
+          "type": "integer",
+          "description": "抽象级别（0-3）",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "pedagogical_level": {
+          "type": "integer",
+          "description": "教学级别（1-3）",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "theory_context": {
+          "type": "string",
+          "description": "理论上下文",
+          "enum": ["classical", "relativistic", "quantum_intro", "quantum_advanced", "statistical", "phenomenological"]
+        },
+        "status": {
+          "type": "string",
+          "description": "节点状态",
+          "enum": ["canonical", "alternate", "deprecated", "experimental"]
+        },
+        "validity": {
+          "type": "object",
+          "description": "有效性条件",
+          "properties": {
+            "frame": {
+              "type": "string",
+              "description": "参考系条件"
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "额外说明"
+            }
+          }
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "别名列表",
+          "minItems": 0
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "标签列表",
+          "minItems": 0
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "来源列表",
+          "minItems": 1
+        },
+        "dimension": {
+          "type": "object",
+          "description": "量纲信息（仅适用于quantity/equation类型）",
+          "properties": {
+            "symbol": {
+              "type": "string",
+              "description": "量纲符号"
+            },
+            "base_dimensions": {
+              "type": "string",
+              "description": "基本量纲表示",
+              "pattern": "^((M|L|T|I|Θ|N|J)\\^?[+-]?\\d*\\s*)*$"
+            },
+            "unit": {
+              "type": "string",
+              "description": "标准单位"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "type", "from", "to", "path_id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "边唯一标识符",
+          "pattern": "^edge\\.[a-z0-9_]+\\.(derives_from|requires|uses_math|assumes|equivalent_to|special_case_of|approximation_of|applies_to|motivated_by|related_to)\\.[a-z0-9_]+$"
+        },
+        "type": {
+          "type": "string",
+          "description": "边类型",
+          "enum": ["derives_from", "requires", "uses_math", "assumes", "equivalent_to", "special_case_of", "approximation_of", "applies_to", "motivated_by", "related_to"]
+        },
+        "from": {
+          "type": "string",
+          "description": "源节点ID",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+        },
+        "to": {
+          "type": "string",
+          "description": "目标节点ID",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"
+        },
+        "path_id": {
+          "type": "string",
+          "description": "所属路径ID",
+          "pattern": "^path\\.[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "假设列表",
+          "minItems": 0
+        },
+        "derivation_steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "推导步骤",
+          "minItems": 0
+        },
+        "math_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "使用的数学工具",
+          "minItems": 0
+        },
+        "approximation_tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "近似标签",
+          "minItems": 0
+        },
+        "verified": {
+          "type": "object",
+          "description": "验证状态",
+          "properties": {
+            "schema": {
+              "type": "boolean",
+              "description": "schema验证通过"
+            },
+            "unit": {
+              "type": "boolean",
+              "description": "单位验证通过"
+            },
+            "symbolic": {
+              "type": "boolean",
+              "description": "符号验证通过"
+            }
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "description": "置信度",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "failure_conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "失效条件",
+          "minItems": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

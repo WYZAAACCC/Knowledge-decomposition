@@ -1,0 +1,388 @@
+domain: modern_physics
+edges:
+- assumptions:
+  - inertial_frames
+  - constant_relative_velocity
+  - speed_of_light_constant
+  derivation_steps:
+  - 构造光钟：两面镜子间光往返
+  - 在静止参考系中计算光往返时间
+  - 在运动参考系中计算光路径（直角三角形）
+  - 利用光速不变原理
+  - 根据勾股定理得到时间关系
+  - 导出时间延缓公式 Δt = γΔt₀
+  from: phenomenon.time_dilation
+  id: edge.time_dilation.derives_from.light_clock
+  math_used:
+  - pythagorean_theorem
+  - lorentz_factor
+  path_id: path.time_dilation.canonical
+  to: thought_experiment.light_clock
+  type: derives_from
+- assumptions: []
+  from: phenomenon.time_dilation
+  id: edge.time_dilation.requires.speed_of_light_constant
+  path_id: path.time_dilation.canonical
+  to: postulate.speed_of_light_constant
+  type: assumes
+- assumptions:
+  - relativity_principle
+  - energy_momentum_conservation
+  derivation_steps:
+  - 从相对论动量能量关系出发
+  - 考虑物体吸收辐射的过程
+  - 利用动量能量守恒
+  - 推导质量与能量的等价关系
+  from: relation.einstein_energy
+  id: edge.einstein_energy.derives_from.relativity
+  path_id: path.mass_energy.canonical
+  to: postulate.speed_of_light_constant
+  type: derives_from
+- assumptions:
+  - quantized_light
+  - work_function_material
+  derivation_steps:
+  - 经典波动理论无法解释光电效应
+  - 爱因斯坦提出光量子假设
+  - 光子能量 E = hν
+  - 电子吸收光子，克服逸出功 Φ
+  - 剩余能量转化为光电子动能
+  - 得到 hν = Φ + K_max
+  from: phenomenon.photoelectric_effect
+  id: edge.photoelectric_effect.derives_from.einstein_equation
+  path_id: path.photoelectric.canonical
+  to: relation.einstein_photoelectric
+  type: derives_from
+- assumptions: []
+  from: relation.einstein_photoelectric
+  id: edge.einstein_photoelectric.requires.photon
+  path_id: path.photoelectric.canonical
+  to: concept.photon
+  type: requires
+- assumptions: []
+  from: relation.einstein_photoelectric
+  id: edge.einstein_photoelectric.requires.work_function
+  path_id: path.photoelectric.canonical
+  to: concept.work_function
+  type: requires
+- assumptions:
+  - analogy_ligh_matter
+  - non_relativistic_speeds
+  derivation_steps:
+  - 光具有波粒二象性：E = hν, p = h/λ
+  - 类比物质粒子也应具有波动性
+  - 提出物质波假设
+  - 将光的动量波长关系推广到物质粒子
+  - 得到 λ = h/p
+  from: relation.de_broglie
+  id: edge.de_broglie.derives_from.wave_particle_duality
+  math_used:
+  - analogical_reasoning
+  path_id: path.de_broglie.canonical
+  to: concept.wave_particle_duality
+  type: derives_from
+- assumptions: []
+  from: relation.de_broglie
+  id: edge.de_broglie.requires.planck_constant
+  path_id: path.de_broglie.canonical
+  to: constant.planck
+  type: requires
+- assumptions:
+  - hydrogen_atom
+  - circular_orbits
+  - non_relativistic
+  derivation_steps:
+  - 定态假设：电子在特定轨道运动不辐射
+  - 角动量量子化：L = nħ
+  - 经典力学：库仑力提供向心力
+  - 结合两个条件推导轨道半径
+  - 计算能级公式 E_n = -13.6/n² eV
+  from: model.bohr_atom
+  id: edge.bohr_atom.derives_from.classical_and_quantum
+  math_used:
+  - centripetal_force
+  - coulomb_law
+  - quantization
+  path_id: path.bohr_atom.canonical
+  to: postulate.stationary_states
+  type: derives_from
+- assumptions: []
+  from: model.bohr_atom
+  id: edge.bohr_atom.requires.quantized_angular_momentum
+  path_id: path.bohr_atom.canonical
+  to: postulate.quantized_angular_momentum
+  type: assumes
+nodes:
+- abstraction_level: 0
+  aliases:
+  - photon
+  - 光量子
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: E_photon
+    unit: J
+  domain: modern_physics
+  id: concept.photon
+  pedagogical_level: 2
+  sources:
+  - seed.modern_physics.v1
+  statement: 光的量子，具有波粒二象性
+  status: canonical
+  theory_context: quantum_intro
+  title: 光子
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - rest energy
+  - 静止能量
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: E_0
+    unit: J
+  domain: modern_physics
+  formula_latex: E_0 = mc^2
+  id: concept.rest_energy
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 物体静止时具有的能量
+  status: canonical
+  theory_context: relativistic
+  title: 静能
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - work function
+  - 功函数
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: Φ
+    unit: J
+  domain: modern_physics
+  id: concept.work_function
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 电子从金属表面逸出所需的最小能量
+  status: canonical
+  theory_context: quantum_intro
+  title: 逸出功
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - wave-particle duality
+  - 二象性
+  domain: modern_physics
+  id: concept.wave_particle_duality
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 微观粒子同时具有波动性和粒子性
+  status: canonical
+  theory_context: quantum_intro
+  title: 波粒二象性
+  type: concept
+- abstraction_level: 1
+  aliases:
+  - Einstein's mass-energy equivalence
+  - 质能方程
+  dimension:
+    base_dimensions: M L^2 T^-2
+    symbol: E
+    unit: J
+  domain: modern_physics
+  formula_latex: E = mc^2
+  id: relation.einstein_energy
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 质量与能量的等价关系
+  status: canonical
+  theory_context: relativistic
+  title: 爱因斯坦质能关系
+  type: equation
+- abstraction_level: 1
+  aliases:
+  - de Broglie relation
+  - 物质波公式
+  dimension:
+    base_dimensions: L
+    symbol: λ
+    unit: m
+  domain: modern_physics
+  formula_latex: \lambda = \frac{h}{p}
+  id: relation.de_broglie
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 物质粒子具有波动性，波长与动量成反比
+  status: canonical
+  theory_context: quantum_intro
+  title: 德布罗意关系
+  type: equation
+- abstraction_level: 2
+  aliases:
+  - Einstein's photoelectric equation
+  - 光电方程
+  domain: modern_physics
+  formula_latex: h\nu = \Phi + K_{\text{max}}
+  id: relation.einstein_photoelectric
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 光子能量等于逸出功与光电子最大动能之和
+  status: canonical
+  theory_context: quantum_intro
+  title: 爱因斯坦光电效应方程
+  type: equation
+- abstraction_level: 1
+  aliases:
+  - photoelectric effect
+  - 光电效应现象
+  domain: modern_physics
+  id: phenomenon.photoelectric_effect
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 光照射金属表面使电子逸出的现象
+  status: canonical
+  theory_context: quantum_intro
+  title: 光电效应
+  type: concept
+- abstraction_level: 1
+  aliases:
+  - time dilation
+  - 时间膨胀
+  domain: modern_physics
+  formula_latex: \Delta t = \frac{\Delta t_0}{\sqrt{1 - v^2/c^2}}
+  id: phenomenon.time_dilation
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 运动的时钟比静止的时钟走得慢
+  status: canonical
+  theory_context: relativistic
+  title: 时间延缓
+  type: concept
+- abstraction_level: 1
+  aliases:
+  - Bohr model of the atom
+  - 玻尔模型
+  domain: modern_physics
+  id: model.bohr_atom
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 基于量子化条件的原子结构模型
+  status: canonical
+  theory_context: quantum_intro
+  title: 玻尔原子模型
+  type: model
+- abstraction_level: 0
+  aliases:
+  - constancy of the speed of light
+  - 光速不变
+  domain: modern_physics
+  id: postulate.speed_of_light_constant
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 在所有惯性参考系中，真空中的光速都相同
+  status: canonical
+  theory_context: relativistic
+  title: 光速不变原理
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - principle of relativity
+  - 相对性原理
+  domain: modern_physics
+  id: postulate.relativity_principle
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 所有物理定律在所有惯性参考系中形式相同
+  status: canonical
+  theory_context: relativistic
+  title: 相对性原理
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - stationary states postulate
+  domain: modern_physics
+  id: postulate.stationary_states
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 电子在原子中只能处于一系列不连续的能量状态
+  status: canonical
+  theory_context: quantum_intro
+  title: 定态假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - angular momentum quantization
+  domain: modern_physics
+  formula_latex: L = n\hbar
+  id: postulate.quantized_angular_momentum
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 电子轨道角动量只能取普朗克常数的整数倍
+  status: canonical
+  theory_context: quantum_intro
+  title: 角动量量子化假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - Planck constant
+  - 普朗克常量
+  dimension:
+    base_dimensions: M L^2 T^-1
+    symbol: h
+    unit: J·s
+  domain: modern_physics
+  formula_latex: h
+  id: constant.planck
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 量子力学中的基本常数
+  status: canonical
+  theory_context: quantum_intro
+  title: 普朗克常数
+  type: quantity
+- abstraction_level: 0
+  aliases:
+  - speed of light
+  - 光速常量
+  dimension:
+    base_dimensions: L T^-1
+    symbol: c
+    unit: m/s
+  domain: modern_physics
+  formula_latex: c
+  id: constant.speed_of_light
+  pedagogical_level: 2
+  sources:
+  - seed.modern_physics.v1
+  statement: 真空中的光传播速度
+  status: canonical
+  theory_context: relativistic
+  title: 光速
+  type: quantity
+- abstraction_level: 3
+  aliases:
+  - light clock thought experiment
+  - 光钟
+  domain: modern_physics
+  id: thought_experiment.light_clock
+  pedagogical_level: 3
+  sources:
+  - seed.modern_physics.v1
+  statement: 用光的反射计时说明时间延缓
+  status: canonical
+  theory_context: relativistic
+  title: 光钟思想实验
+  type: experiment
+version: 1.0.0

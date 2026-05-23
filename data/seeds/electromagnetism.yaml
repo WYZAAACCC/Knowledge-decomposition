@@ -1,0 +1,447 @@
+domain: electromagnetism
+edges:
+- assumptions: []
+  from: law.coulomb
+  id: edge.coulomb.requires.point_charge
+  path_id: path.coulomb.canonical
+  to: assumption.point_charge
+  type: requires
+- assumptions: []
+  from: law.coulomb
+  id: edge.coulomb.requires.vacuum
+  path_id: path.coulomb.canonical
+  to: assumption.vacuum_or_free_space
+  type: requires
+- assumptions: []
+  from: law.coulomb
+  id: edge.coulomb.requires.superposition
+  path_id: path.coulomb.canonical
+  to: principle.superposition
+  type: requires
+- assumptions:
+  - closed_surface
+  - superposition_holds
+  derivation_steps:
+  - 从库仑定律出发
+  - 计算点电荷的电场
+  - 计算通过闭合曲面的电通量
+  - 证明电通量只与曲面内电荷有关，与曲面形状无关
+  - 利用叠加原理推广到任意电荷分布
+  from: law.gauss_electric
+  id: edge.gauss_electric.derives_from.coulomb
+  math_used:
+  - surface_integral
+  - solid_angle
+  path_id: path.gauss_electric.canonical
+  to: law.coulomb
+  type: derives_from
+- assumptions: []
+  from: law.gauss_electric
+  id: edge.gauss_electric.requires.electric_flux
+  path_id: path.gauss_electric.canonical
+  to: concept.electric_flux
+  type: requires
+- assumptions: []
+  from: law.gauss_electric
+  id: edge.gauss_electric.requires.closed_surface
+  path_id: path.gauss_electric.canonical
+  to: assumption.closed_surface
+  type: assumes
+- assumptions: []
+  from: law.ampere
+  id: edge.ampere.requires.closed_loop
+  path_id: path.ampere.canonical
+  to: assumption.closed_loop
+  type: assumes
+- assumptions: []
+  from: law.ampere
+  id: edge.ampere.requires.steady_currents
+  path_id: path.ampere.canonical
+  to: assumption.steady_currents
+  type: assumes
+- assumptions:
+  - changing_flux
+  - conductive_loop
+  from: law.faraday
+  id: edge.faraday.requires.magnetic_flux
+  path_id: path.faraday.canonical
+  to: concept.magnetic_flux
+  type: requires
+- assumptions:
+  - constant_temperature
+  from: law.ohm
+  id: edge.ohm.requires.linear_material
+  path_id: path.ohm.canonical
+  to: assumption.linear_material
+  type: assumes
+- assumptions: []
+  from: law.ohm
+  id: edge.ohm.requires.resistance
+  path_id: path.ohm.canonical
+  to: concept.resistance
+  type: requires
+- assumptions:
+  - point_charge
+  - known_e_and_b_fields
+  derivation_steps:
+  - 静止电荷在电场中受力：F_e = qE
+  - 运动电荷在磁场中受力：F_m = qv × B
+  - 结合两种力得到总力
+  from: law.lorentz_force
+  id: edge.lorentz_force.derives_from.electric_and_magnetic
+  math_used:
+  - cross_product
+  path_id: path.lorentz_force.canonical
+  to: concept.electric_field
+  type: derives_from
+- assumptions: []
+  from: law.lorentz_force
+  id: edge.lorentz_force.requires.magnetic_field
+  path_id: path.lorentz_force.canonical
+  to: concept.magnetic_field
+  type: requires
+nodes:
+- abstraction_level: 0
+  aliases:
+  - electric charge
+  - 电负荷
+  dimension:
+    base_dimensions: I T
+    symbol: q
+    unit: C
+  domain: electromagnetism
+  id: concept.electric_charge
+  pedagogical_level: 1
+  sources:
+  - seed.electromagnetism.v1
+  statement: 物质的一种基本属性，有正负两种
+  status: canonical
+  theory_context: classical
+  title: 电荷
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - electric field
+  - 电场强度
+  dimension:
+    base_dimensions: M L T^-3 I^-1
+    symbol: E
+    unit: N/C or V/m
+  domain: electromagnetism
+  id: concept.electric_field
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 电荷周围存在的特殊物质，对放入其中的电荷有力的作用
+  status: canonical
+  theory_context: classical
+  title: 电场
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - magnetic field
+  - 磁感应强度
+  dimension:
+    base_dimensions: M T^-2 I^-1
+    symbol: B
+    unit: T
+  domain: electromagnetism
+  id: concept.magnetic_field
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 磁体或电流周围存在的特殊物质，对放入其中的磁极或电流有力的作用
+  status: canonical
+  theory_context: classical
+  title: 磁场
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - electric potential
+  - 电位
+  dimension:
+    base_dimensions: M L^2 T^-3 I^-1
+    symbol: V
+    unit: V
+  domain: electromagnetism
+  id: concept.electric_potential
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 单位正电荷在某点具有的电势能
+  status: canonical
+  theory_context: classical
+  title: 电势
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - electric current
+  - 电流强度
+  dimension:
+    base_dimensions: I
+    symbol: I
+    unit: A
+  domain: electromagnetism
+  id: concept.electric_current
+  pedagogical_level: 1
+  sources:
+  - seed.electromagnetism.v1
+  statement: 电荷的定向移动
+  status: canonical
+  theory_context: classical
+  title: 电流
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - resistance
+  - 电阻值
+  dimension:
+    base_dimensions: M L^2 T^-3 I^-2
+    symbol: R
+    unit: Ω
+  domain: electromagnetism
+  id: concept.resistance
+  pedagogical_level: 1
+  sources:
+  - seed.electromagnetism.v1
+  statement: 导体对电流的阻碍作用
+  status: canonical
+  theory_context: classical
+  title: 电阻
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - electric flux
+  - 电通量
+  dimension:
+    base_dimensions: M L^3 T^-3 I^-1
+    symbol: Φ_E
+    unit: N·m²/C
+  domain: electromagnetism
+  formula_latex: \Phi_E = \int \vec{E} \cdot d\vec{A}
+  id: concept.electric_flux
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 通过某一曲面的电场线条数
+  status: canonical
+  theory_context: classical
+  title: 电通量
+  type: concept
+- abstraction_level: 0
+  aliases:
+  - magnetic flux
+  - 磁通量
+  dimension:
+    base_dimensions: M L^2 T^-2 I^-1
+    symbol: Φ_B
+    unit: Wb
+  domain: electromagnetism
+  formula_latex: \Phi_B = \int \vec{B} \cdot d\vec{A}
+  id: concept.magnetic_flux
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 通过某一曲面的磁场线条数
+  status: canonical
+  theory_context: classical
+  title: 磁通量
+  type: concept
+- abstraction_level: 1
+  aliases:
+  - Coulomb's law
+  - 静电作用定律
+  domain: electromagnetism
+  formula_latex: F = k \frac{q_1 q_2}{r^2}
+  id: law.coulomb
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 真空中两个静止点电荷之间的作用力与电荷量的乘积成正比，与距离的平方成反比
+  status: canonical
+  theory_context: classical
+  title: 库仑定律
+  type: law
+- abstraction_level: 1
+  aliases:
+  - Gauss's law for electricity
+  - 高斯电通定律
+  domain: electromagnetism
+  formula_latex: \oint \vec{E} \cdot d\vec{A} = \frac{Q_{\text{enc}}}{\epsilon_0}
+  id: law.gauss_electric
+  pedagogical_level: 3
+  sources:
+  - seed.electromagnetism.v1
+  statement: 通过任意闭合曲面的电通量等于该曲面内电荷的代数和除以真空介电常数
+  status: canonical
+  theory_context: classical
+  title: 高斯定律（电场）
+  type: law
+- abstraction_level: 1
+  aliases:
+  - Gauss's law for magnetism
+  - 磁通连续性
+  domain: electromagnetism
+  formula_latex: \oint \vec{B} \cdot d\vec{A} = 0
+  id: law.gauss_magnetic
+  pedagogical_level: 3
+  sources:
+  - seed.electromagnetism.v1
+  statement: 通过任意闭合曲面的磁通量恒为零
+  status: canonical
+  theory_context: classical
+  title: 高斯定律（磁场）
+  type: law
+- abstraction_level: 1
+  aliases:
+  - Ampère's circuital law
+  - 安培定律
+  domain: electromagnetism
+  formula_latex: \oint \vec{B} \cdot d\vec{l} = \mu_0 I_{\text{enc}}
+  id: law.ampere
+  pedagogical_level: 3
+  sources:
+  - seed.electromagnetism.v1
+  statement: 磁场沿任意闭合环路的线积分等于穿过该环路的电流的代数和乘以真空磁导率
+  status: canonical
+  theory_context: classical
+  title: 安培环路定律
+  type: law
+- abstraction_level: 1
+  aliases:
+  - Faraday's law of induction
+  - 电磁感应定律
+  domain: electromagnetism
+  formula_latex: \mathcal{E} = -\frac{d\Phi_B}{dt}
+  id: law.faraday
+  pedagogical_level: 3
+  sources:
+  - seed.electromagnetism.v1
+  statement: 闭合回路中感应电动势的大小与穿过回路的磁通量变化率成正比
+  status: canonical
+  theory_context: classical
+  title: 法拉第电磁感应定律
+  type: law
+- abstraction_level: 1
+  aliases:
+  - Ohm's law
+  - V=IR
+  domain: electromagnetism
+  formula_latex: V = IR
+  id: law.ohm
+  pedagogical_level: 1
+  sources:
+  - seed.electromagnetism.v1
+  statement: 通过导体的电流与导体两端的电压成正比
+  status: canonical
+  theory_context: classical
+  title: 欧姆定律
+  type: law
+- abstraction_level: 1
+  aliases:
+  - Lorentz force
+  - 电磁力公式
+  domain: electromagnetism
+  formula_latex: \vec{F} = q(\vec{E} + \vec{v} \times \vec{B})
+  id: law.lorentz_force
+  pedagogical_level: 3
+  sources:
+  - seed.electromagnetism.v1
+  statement: 运动电荷在电磁场中受到的力
+  status: canonical
+  theory_context: classical
+  title: 洛伦兹力公式
+  type: law
+- abstraction_level: 0
+  aliases:
+  - point charge assumption
+  domain: electromagnetism
+  id: assumption.point_charge
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 电荷集中在一点，不考虑尺寸
+  status: canonical
+  theory_context: classical
+  title: 点电荷假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - vacuum/free space assumption
+  domain: electromagnetism
+  id: assumption.vacuum_or_free_space
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 不考虑介质的影响
+  status: canonical
+  theory_context: classical
+  title: 真空或自由空间假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - steady currents assumption
+  domain: electromagnetism
+  id: assumption.steady_currents
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 电流不随时间变化
+  status: canonical
+  theory_context: classical
+  title: 稳恒电流假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - closed surface assumption
+  domain: electromagnetism
+  id: assumption.closed_surface
+  pedagogical_level: 3
+  sources:
+  - seed.electromagnetism.v1
+  statement: 高斯定律适用于任意闭合曲面
+  status: canonical
+  theory_context: classical
+  title: 闭合曲面假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - closed loop assumption
+  domain: electromagnetism
+  id: assumption.closed_loop
+  pedagogical_level: 3
+  sources:
+  - seed.electromagnetism.v1
+  statement: 安培环路定律适用于任意闭合环路
+  status: canonical
+  theory_context: classical
+  title: 闭合环路假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - linear material assumption
+  domain: electromagnetism
+  id: assumption.linear_material
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 材料的电阻不随电压、电流变化
+  status: canonical
+  theory_context: classical
+  title: 线性材料假设
+  type: assumption
+- abstraction_level: 0
+  aliases:
+  - superposition principle
+  - 叠加原理
+  domain: electromagnetism
+  id: principle.superposition
+  pedagogical_level: 2
+  sources:
+  - seed.electromagnetism.v1
+  statement: 多个电荷产生的电场等于各个电荷单独产生的电场的矢量和
+  status: canonical
+  theory_context: classical
+  title: 叠加原理
+  type: concept
+version: 1.0.0
